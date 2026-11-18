@@ -15,7 +15,7 @@
 | Synthesis + place & route | **crosby3.utsarr.net** only | Cadence Genus + Innovus, gpdk045 |
 | FPGA build + program Nexys 4 | **Windows** laptop (or Linux) | Xilinx Vivado (not available for macOS) |
 
-GitHub (`https://github.com/sarreola07/ee5113-kws-accelerator`, private) is the
+GitHub (`https://github.com/sarreola07/ee5113-kws-accelerator`, public) is the
 single source of truth. Every machine has its own clone, and you move work between
 them with `git push` / `git pull`. Never copy files by hand between machines.
 

@@ -6,7 +6,7 @@
 - **Machine(s):** cloud Linux session → GitHub
 
 ## What was done
-- Created the private GitHub repo `sarreola07/ee5113-kws-accelerator` with the full project structure from the proposal.
+- Created the public GitHub repo `sarreola07/ee5113-kws-accelerator` with the full project structure from the proposal.
 - Python:
   - `kws_common.py` holds the **bit-exact integer golden model**.
   - `train.py` trains the float model on Speech Commands with words yes/no/on/off/up/down, using 10 MFCC × 25 frames = 250 inputs.
