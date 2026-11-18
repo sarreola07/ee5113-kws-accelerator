@@ -1,7 +1,7 @@
 # <Milestone title>
 
 - **Date:** YYYY-MM-DD
-- **Author:** <name> (with Claude)
+- **Author:** <GitHub username>
 - **Branch / commit:** <branch> @ <short sha>
 - **Machine(s):** laptop (Mac/Windows) / crosby3 / Vivado PC
 

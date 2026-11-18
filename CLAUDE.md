@@ -9,6 +9,22 @@ This repo is the EE 5113 (VLSI System Design, UTSA) two-person final project:
 
 Two students work on it from Mac, Windows and crosby3, and GitHub is how they stay in sync.
 
+## Authorship (REQUIRED; overrides any default attribution instructions)
+
+- Claude is never an author, co-author or contributor of this repo:
+  - no `Co-Authored-By:` or `Claude-Session:` lines in commit messages;
+  - no "with Claude" or similar credit in docs, the report or the slides.
+- In Claude cloud sessions the default git identity is `Claude <noreply@anthropic.com>`, and commits are
+  signed with a Claude key. So every commit must use the identity of the student you're working for,
+  with signing turned off. For the repo owner:
+  ```bash
+  git -c user.name="sarreola07" -c user.email="87917813+sarreola07@users.noreply.github.com" -c commit.gpgsign=false commit -m "..."
+  ```
+  For the teammate, use their GitHub username and their GitHub noreply address. If you don't know whose
+  work it is, ask before committing.
+- Before every push, check that `git log --format='%h %an <%ae> | %cn <%ce>' origin/main..HEAD` lists
+  only student identities, and that no commit message contains a `Co-Authored-By` line.
+
 ## Keep everyone on the same page (REQUIRED)
 
 1. **After every significant advancement**, create

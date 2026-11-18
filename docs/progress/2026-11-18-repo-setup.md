@@ -1,9 +1,9 @@
 # Repository and environment set up
 
 - **Date:** 2026-11-18
-- **Author:** sarreola07 (with Claude)
+- **Author:** sarreola07
 - **Branch / commit:** main, initial commit
-- **Machine(s):** Claude cloud session (Linux) → GitHub
+- **Machine(s):** cloud Linux session → GitHub
 
 ## What was done
 - Created the private GitHub repo `sarreola07/ee5113-kws-accelerator` with the full project structure from the proposal.
