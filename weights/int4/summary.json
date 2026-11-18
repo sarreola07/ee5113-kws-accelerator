@@ -1,0 +1,35 @@
+{
+  "precision": "int4",
+  "bits": 4,
+  "shift1": 5,
+  "input_scale": 0.5619364110757816,
+  "n_test": 50,
+  "words": [
+    "yes",
+    "no",
+    "on",
+    "off",
+    "up",
+    "down"
+  ],
+  "float_accuracy": 1.0,
+  "int_accuracy": 0.68,
+  "fpga_clip_labels": [
+    "on",
+    "yes",
+    "yes",
+    "off",
+    "on",
+    "yes",
+    "off",
+    "down",
+    "yes",
+    "off",
+    "down",
+    "yes",
+    "yes",
+    "no",
+    "no",
+    "on"
+  ]
+}

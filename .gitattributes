@@ -1,0 +1,19 @@
+# Keep Unix line endings for everything that runs on crosby3 / Linux tools,
+# even when edited on Windows.
+* text=auto
+*.v    text eol=lf
+*.sv   text eol=lf
+*.vh   text eol=lf
+*.tcl  text eol=lf
+*.sdc  text eol=lf
+*.xdc  text eol=lf
+*.sh   text eol=lf
+*.py   text eol=lf
+*.mem  text eol=lf
+*.md   text eol=lf
+*.bat  text eol=crlf
+*.pdf  binary
+*.docx binary
+*.pptx binary
+*.gds  binary
+*.bit  binary

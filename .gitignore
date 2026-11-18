@@ -1,0 +1,67 @@
+# ---- all tool run directories (regenerate with the scripts) ----
+work/
+fpga/work/
+
+# ---- Cadence Genus / Innovus / Xcelium ----
+*.enc
+*.enc.dat/
+*.log
+*.log[0-9]*
+*.cmd
+*.cmd[0-9]*
+*.logv
+*.tstamp
+fv/
+timingReports/
+xcelium.d/
+INCA_libs/
+*.shm/
+*.trn
+*.dsn
+.cadence/
+*.cdslck
+*.cdslck.*
+.simvision/
+waves.shm/
+
+# ---- waveforms ----
+*.vcd
+*.fsdb
+*.vvp
+
+# ---- Xilinx Vivado ----
+.Xil/
+*.jou
+*.str
+*.runs/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.dcp
+usage_statistics_webtalk.*
+webtalk*
+vivado_pid*.zip
+
+# ---- large layout files (commit only a curated copy under results/) ----
+*.gds
+!results/**/*.gds
+*.bit
+!results/**/*.bit
+
+# ---- Python ----
+python/data/
+python/checkpoints/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+*.swp
+*~
