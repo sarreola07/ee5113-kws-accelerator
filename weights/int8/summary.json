@@ -1,9 +1,4 @@
 {
-  "precision": "int8",
-  "bits": 8,
-  "shift1": 9,
-  "input_scale": 0.030972873051421036,
-  "n_test": 50,
   "words": [
     "yes",
     "no",
@@ -12,8 +7,103 @@
     "up",
     "down"
   ],
+  "synthetic": true,
+  "eval_split": "synthetic",
+  "n_eval": 50,
   "float_accuracy": 1.0,
   "int_accuracy": 0.98,
+  "int_float_agreement": 0.98,
+  "val_float_accuracy": null,
+  "val_int_accuracy": null,
+  "confusion_int": [
+    [
+      19,
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      3,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      9,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      3,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      6
+    ]
+  ],
+  "sim_subset": {
+    "n": 50,
+    "float_accuracy": 1.0,
+    "int_accuracy": 0.98
+  },
+  "weight_scales": {
+    "w1": 0.004643832142178333,
+    "w2": 0.00812550803834058
+  },
+  "model_sha256": null,
+  "feature_cfg": {
+    "amin": 1e-10,
+    "clip": 16000,
+    "hop": 160,
+    "n_fft": 400,
+    "n_frames": 25,
+    "n_mels": 40,
+    "n_mfcc": 10,
+    "sr": 16000,
+    "top_db": 80.0,
+    "version": 1,
+    "words": [
+      "yes",
+      "no",
+      "on",
+      "off",
+      "up",
+      "down"
+    ]
+  },
+  "calib": {
+    "source": "the synthetic clips",
+    "n": 50
+  },
+  "precision": "int8",
+  "bits": 8,
+  "shift1": 9,
+  "input_scale": 0.030972873051421036,
+  "n_test": 50,
   "fpga_clip_labels": [
     "on",
     "yes",
