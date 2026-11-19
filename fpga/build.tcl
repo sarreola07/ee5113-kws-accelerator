@@ -53,7 +53,7 @@ report_timing_summary -file "$rep/timing_summary.rpt"
 report_utilization    -file "$rep/utilization.rpt"
 set wns [get_property SLACK [get_timing_paths -delay_type max]]
 set bit "$root/results/fpga/kws_fpga_top_$BOARD.bit"
-file copy -force [glob "$here/work/$BOARD/kws_fpga.runs/impl_1/*.bit"] $bit
+file copy -force [lindex [glob "$here/work/$BOARD/kws_fpga.runs/impl_1/*.bit"] 0] $bit   ;# lindex: glob returns a list
 puts "=================================================================="
 puts " Bitstream: $bit   (part $PART)"
 puts " Worst setup slack (50 MHz MMCM clock): $wns ns  (negative = timing FAILED)"

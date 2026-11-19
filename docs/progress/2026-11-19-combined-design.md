@@ -61,7 +61,7 @@ python fpga/gen_fpga_mem.py
 | `flow/tsmc18/*` | RC + Innovus scripts, SDC, pin files, `RUN_GUIDE.md`, `results.sh`, `save_results.sh` | crosby3 |
 | `fpga/*` | Board top, ROM files, pins (nexys4, nexys4ddr), build/program scripts | Vivado |
 | `results/int8`, `results/int4` | Curated RC and Innovus reports, timing summaries, layout pictures, netlists | report |
-| `results/fpga/` | FPGA timing/utilization reports and prebuilt bitstreams | board |
+| `results/fpga/` | Prebuilt `kws_fpga_top_nexys4ddr.bit` + its timing/utilization reports (`nexys4ddr/`) | board |
 | `results/python/` | Accuracy tables, confusion matrices, trained models, figures | report |
 | `docs/report/` | Final report (.docx, .pdf) and screenshots | submission |
 | `alt/sergio_bram_design/` | Previous version of the design, unchanged | reference |
@@ -76,7 +76,7 @@ python fpga/gen_fpga_mem.py
 | Layout: chip area / power @ 100 MHz | 79,401 µm² / 3.84 mW | 46,802 µm² / 1.92 mW |
 | Layout: setup / hold WNS @ 100 MHz | +0.079 / +0.259 ns | +0.228 / +0.256 ns |
 | DRC / connectivity / antenna | clean | clean |
-| FPGA (both in one bitstream, 50 MHz) | ~13k LUTs (20 % of XC7A100T), setup met | |
+| FPGA, Nexys 4 DDR / A7-100T (both in one bitstream, 50 MHz) | 12,891 LUTs (20.3 %), 602 FFs, 0 BRAM, 1 MMCM; WNS +2.796 ns, WHS +0.027 ns | |
 
 ## Problems hit & fixes
 - Innovus 20.1 read `slow.lib` before the LEF when the MMMC file was given with `init_mmmc_file` ("Read 0
@@ -86,9 +86,12 @@ python fpga/gen_fpga_mem.py
 - RC area recovery makes the 100 MHz slack ~0, so Fmax is measured with a separate 2 ns synthesis.
 - FPGA at 100 MHz failed timing (WNS −4.4 ns: LUT ROM read + MAC in one cycle). Fix: 50 MHz MMCM clock.
 - Windows paths with spaces break some Vivado options; see `CLAUDE.md` for the workarounds.
+- `fpga/build.tcl` failed at the very end (after the bitstream was written) because Tcl `glob` returns a
+  list, which `file copy` read as one braced path. Fix: `[lindex [glob ...] 0]`.
 
 ## Next steps
-- [ ] Test the bitstream on the real board (BTNU should show `176  200` / `177  200`).
+- [ ] Test `results/fpga/kws_fpga_top_nexys4ddr.bit` on the real board (BTNU should show `176  200` / `177  200`).
+- [ ] Original Nexys 4 (no DDR): run `fpgauild.bat nexys4` once (~25 min) and commit `results/fpga/`.
 - [ ] Slides (`docs/slides/`).
 - [ ] Optional: INT6 with the main design; block-RAM ROMs (from `alt/`) to run the FPGA at 100 MHz;
       gpdk045 run to match the proposal's 45 nm plan.

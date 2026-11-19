@@ -77,7 +77,7 @@ fpga\build.bat nexys4                              # Windows: rebuild for the or
 | Model trained on Speech Commands, INT8/INT4 QAT export | ✅ 86.7 % / 85.1 % |
 | RTL + testbench (bit-exact vs Python, every layer, 200 real clips) | ✅ 0 mismatches, INT8 & INT4 |
 | Synthesis + place & route (tsmc18), DRC/connectivity/antenna | ✅ both precisions, timing met at 100 MHz |
-| FPGA demo (both precisions, 200 clips, run-all check) | ✅ simulated; bitstreams in `results/fpga/`; ⏳ test on the board |
+| FPGA demo (both precisions, 200 clips, run-all check) | ✅ simulated; ✅ Nexys 4 DDR/A7 bitstream built (50 MHz, WNS +2.8 ns); ⏳ test on the board, ⏳ nexys4 build |
 | Final report | ✅ `docs/report/` ; ⏳ slides |
 | Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 
