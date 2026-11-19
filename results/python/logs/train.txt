@@ -1,0 +1,32 @@
+Data: 18470 train / 2254 val / 2430 test clips, 250 inputs, words = ['yes', 'no', 'on', 'off', 'left', 'right']
+
+Training FP32 model (60 epochs)...
+  epoch  10  val  85.5%
+  epoch  20  val  87.2%
+  epoch  30  val  87.8%
+  epoch  40  val  87.1%
+  epoch  50  val  87.4%
+  epoch  60  val  87.2%
+  FP32       val  87.9%   test  86.0%
+
+INT8:
+  INT8-PTQ   val  87.8%   test  86.1%
+  INT8-QAT   val  88.5%   test  86.7%
+  fake-quant vs integer model agreement on test set: 99.96%
+  -> saved QAT model: SHIFT=9, ACC_W=23, s_x=0.04536
+
+INT4:
+  INT4-PTQ   val  85.3%   test  83.7%
+  INT4-QAT   val  87.5%   test  85.1%
+  fake-quant vs integer model agreement on test set: 99.14%
+  -> saved QAT model: SHIFT=5, ACC_W=15, s_x=0.41520
+
+Summary (test accuracy uses the bit-exact integer model for INT rows)
+model            val    test   weights
+FP32           87.9%   86.0%   32768 B
+INT8-PTQ       87.8%   86.1%    8192 B
+INT8-QAT       88.5%   86.7%    8192 B
+INT4-PTQ       85.3%   83.7%    4096 B
+INT4-QAT       87.5%   85.1%    4096 B
+
+Saved results to C:\Users\CHIT\AppData\Local\Claude-Data\claude_pzs8sxrjxfjjc\scratch-workspaces\caddfed1-9632-40f7-8d58-258ebae63ea3\4e65b8eb-e227-4a11-80b2-916bbbc00822\scratch-2026-11-17-1dde5e\results

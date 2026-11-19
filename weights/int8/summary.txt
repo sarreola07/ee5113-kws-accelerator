@@ -1,0 +1,10 @@
+INT8 keyword spotting model
+Classes: 0=yes 1=no 2=on 3=off 4=left 5=right
+Network: 250 -> 32 (ReLU) -> 6 -> argmax
+BW = 8, ACC_W = 23, SHIFT = 9, QMAX = 127
+Input scale s_x = 0.045358  (x_int = clamp(round(normalized_feature / s_x), -QMAX, QMAX))
+Weight scales: s_w1 = 0.004194, s_w2 = 0.006764
+Weight memory: 8192 x 8 bits = 8192 bytes
+Integer-model accuracy on the full test set: 86.67% (2430 clips)
+Integer-model accuracy on the 200 exported test vectors: 88.00%
+The Verilog output must equal test_expected.mem for every vector (bit-exact match).

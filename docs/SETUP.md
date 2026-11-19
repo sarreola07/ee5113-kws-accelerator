@@ -3,17 +3,17 @@
 > **This is the living setup guide.** If you follow it from top to bottom on a
 > fresh machine, you should end up able to run every part of the project.
 > Whenever a step changes, it is updated here, in the same commit as the change
-> (see `CLAUDE.md`). Last updated: **2026-11-18** (initial repo setup).
+> (see `CLAUDE.md`). Last updated: **2026-11-19** (combined design: trained model, tsmc18 flow, FPGA demo).
 
 ## 0. What runs where
 
 | Task | Machine | Tools |
 |------|---------|-------|
 | Edit code and docs, use Claude | any laptop (Mac or Windows) | Git, VS Code (optional), Claude Code |
-| Train and quantize the network | any laptop or a Linux lab machine | Python 3.8+ and NumPy (see `python/README.md`) |
-| RTL simulation (quick check) | any laptop, or crosby3 | Icarus Verilog (laptop) / Xcelium (crosby3) |
-| Synthesis + place & route | **crosby3.utsarr.net** only | Cadence Genus + Innovus, gpdk045 |
-| FPGA build + program Nexys 4 | **Windows** laptop (or Linux) | Xilinx Vivado (not available for macOS) |
+| Train and quantize the network | any laptop or a Linux lab machine | Python 3.10+ with PyTorch, NumPy, matplotlib (`python/requirements.txt`) |
+| RTL simulation (bit-exact check) | Windows/Linux with Vivado, or crosby3 | Vivado xsim (`sim/run_sim.ps1`, `sim/run_sim.sh`), Xcelium (crosby3) or Icarus |
+| Synthesis + place & route | **crosby3.utsarr.net** only | Cadence RTL Compiler (`rc`) + Innovus 20.1, TSMC 180 nm (tsmc18) |
+| FPGA build + program the board | **Windows** laptop (or Linux) | Xilinx Vivado (not available for macOS) |
 
 GitHub (`https://github.com/sarreola07/ee5113-kws-accelerator`, public) is the
 single source of truth. Every machine has its own clone, and you move work between
@@ -65,13 +65,13 @@ source .venv/bin/activate          # Windows Git Bash: source .venv/Scripts/acti
 pip install -r python/requirements.txt
 ```
 
-Quick check (no dataset needed), which regenerates placeholder weights and simulates:
+Quick check (no dataset needed: the trained weights are committed in `weights/`):
 ```bash
-python python/quantize_export.py --synthetic
-./sim/run_sim.sh int8 iverilog     # expect: TEST PASSED
+.\sim\run_sim.ps1 int8           # Windows + Vivado   -> TEST PASSED, 0 mismatches (also int4, fpga)
+./sim/run_sim.sh int8              # Linux / Mac (xsim, Xcelium or Icarus)
 ```
-> The synthetic command overwrites `weights/`. If real trained weights are
-> already committed, don't commit the synthetic ones. Run `git checkout weights/` to restore them.
+To retrain, `python python/prepare_data.py` first downloads Speech Commands (~2.3 GB stream, keeps ~700 MB
+in the git-ignored `python/data/`); see `python/README.md`.
 
 ## 3. One-time: crosby3 (Cadence server)
 
@@ -87,7 +87,7 @@ python python/quantize_export.py --synthetic
 ### Load the Cadence environment (every login)
 ```bash
 source /home/opt2/setmyenv
-which genus innovus xrun           # all three should print a path
+which rc innovus xrun              # all three should print a path
 ```
 *Optional:* to make this automatic, add the `source` line to `~/.bashrc`, or to `~/.cshrc` if your shell is csh. Check your shell with `echo $SHELL`.
 
@@ -117,44 +117,54 @@ git config --global credential.helper store    # first push asks for username + 
 transfer files with MobaXterm's SFTP side panel, or with `scp -r` from a Mac.
 Record that in a progress log so your partner knows.
 
-### Point the flow at the 45 nm libraries (first person to do this commits it)
+### tsmc18 library files for the ASIC flow (on crosby3, once per clone)
+The flow in `flow/tsmc18/` uses the same TSMC 180 nm files as the Innovus tutorial and HW7. They are
+licensed course files, so they are **not in git** (the repo is public). Copy them next to the scripts:
 ```bash
-./flow/find_libs.sh                 # lists candidate .lib / .lef / qrc / map files
-nano flow/config.tcl                # fix LIB_SLOW, LIB_FAST, LEF_FILES, QRC_TECH, GDS_MAP
-git commit -am "flow: gpdk045 paths on crosby3" && git push
+cd ~/ee5113-kws-accelerator/flow/tsmc18
+cp ~/EE5113_Hw7/slow.lib ~/EE5113_Hw7/all.lef ~/EE5113_Hw7/gds2_innovus-2.map .   # or from the tutorial folder
 ```
+Then follow `flow/tsmc18/RUN_GUIDE.md` (synthesis, Fmax runs, Innovus, `results.sh`, `save_results.sh`).
+The other version of the design (`alt/sergio_bram_design/`) has a Genus + gpdk045 flow instead; its paths
+go in `alt/sergio_bram_design/flow/config.tcl`.
 
-## 4. FPGA: Nexys 4 (Windows + Vivado)
+## 4. FPGA: Nexys 4 / Nexys 4 DDR / Nexys A7 (Windows + Vivado)
 
-1. **Identify your board revision.** The label is printed on the board:
-   - **Nexys 4 DDR** or **Nexys A7** → use `nexys4ddr`
-   - plain **Nexys 4** (no "DDR") → use `nexys4`
+1. **Identify your board.** The label is printed on the board:
+   - **Nexys 4 DDR** or **Nexys A7-100T** → `nexys4ddr`
+   - plain **Nexys 4** (no "DDR") → `nexys4`
+   - **Nexys A7-50T** → `nexys_a7_50t`
 
-   The pin files in `fpga/constraints/` were copied from Digilent's official master XDC files.
+   The pin files in `fpga/constraints/` follow Digilent's official master XDC files.
 2. Plug in the board's USB-PROG port and power it on.
 3. Open a **Command Prompt** in the repo folder. If `vivado` isn't found, first run
-   `C:\Xilinx\Vivado\<version>\settings64.bat`. Then:
+   `C:\Xilinx\Vivado\<version>\settings64.bat`. Then load the prebuilt bitstream:
    ```bat
-   fpga\build.bat int8 nexys4ddr program
+   fpga\program.bat nexys4ddr
    ```
-   This writes the bitstream and reports to `fpga\work\int8_nexys4ddr\`. Check that `timing.rpt` shows no negative slack.
-4. On the board:
-   1. Set **SW3–SW0** to pick a stored clip (0–15).
-   2. Press **BTNC**.
-   3. The display shows the recognized word (YES / no / on / OFF / UP / dn). The leftmost digit shows the clip number.
-
-   The true word for each clip is in `weights/int8/summary.json` → `fpga_clip_labels`.
-5. To keep the numbers for the report, copy `utilization.rpt`, `timing.rpt` and `power.rpt`
-   into `results/fpga/<prec>/` and commit them.
+   or rebuild it first (about 25 minutes; writes `results\fpga\kws_fpga_top_<board>.bit` and reports):
+   ```bat
+   fpga\build.bat nexys4 program
+   ```
+   Check `results\fpga\<board>\timing_summary.rpt`: no negative slack. The design runs at 50 MHz (MMCM).
+4. On the board (both INT8 and INT4 are in one bitstream):
+   - **SW7–SW0**: test clip number 0–199. **SW15**: down = INT8, up = INT4.
+   - **BTNC**: run that clip. The right digits show the word (YES / nO / On / OFF / LEFt / rIGHt),
+     the left digits the clip number. LED[2:0] = word, LED[6:4] = true word, LED12 = correct,
+     LED13 = same answer as Python.
+   - **BTNU**: run all 200 clips. Expect `176  200` (INT8) and `177  200` (INT4): words correct, and
+     clips that match Python.
+5. To keep new numbers for the report, commit `results/fpga/`.
 
 ## 5. Daily workflow (both partners)
 
 ```bash
 git pull                              # 1. ALWAYS start here (on every machine)
 # 2. do the work (with Claude); run the relevant checks:
-./sim/run_sim.sh int8                 #    RTL changed?   must say TEST PASSED (also int4)
-./flow/run.sh all int8                #    crosby3 only:  Genus + Innovus
-./flow/run.sh save int8               #    copy reports into results/int8/
+./sim/run_sim.sh int8                 #    RTL changed?   must say TEST PASSED (also int4, fpga)
+                                      #    (Windows: .\sim\run_sim.ps1 int8)
+# crosby3 only, in flow/tsmc18:  rc -f syn_int8.g ; innovus -files pnr_int8.tcl
+# then ./save_results.sh int8         #    copy reports into results/int8/
 # 3. write/update docs/progress/<date>-<milestone>.md (Claude does this)
 git add -A
 git status                            # 4. check: no work/ , logs, .enc.dat, .bit
@@ -187,11 +197,12 @@ git push                              # 5. partner pulls to continue
 
 | Symptom | Fix |
 |---------|-----|
-| `genus: command not found` | You forgot `source /home/opt2/setmyenv` in this terminal |
-| `**ERROR** missing file` from the flow | Fix the paths in `flow/config.tcl` (§3) |
+| `rc: command not found` / `innovus: command not found` | You forgot `source /home/opt2/setmyenv` in this terminal |
+| RC/Innovus can't find `slow.lib` or `all.lef` | Copy the tsmc18 files into `flow/tsmc18/` (§3) |
 | Cadence GUI doesn't appear (Mac) | Install XQuartz, reconnect with `ssh -Y`, run `echo $DISPLAY` (must not be empty) |
-| `No weights/int8` | Run `python python/quantize_export.py` (or `--synthetic`) and commit `weights/` |
+| `No weights/int8` | Run `python python/export_hw.py` (needs a trained model in `results/python/`) |
 | Script fails with `\r` / `bad interpreter` | Line endings were changed on Windows. `.gitattributes` prevents this. To repair, commit or stash your work first, then run `git rm --cached -r . && git reset --hard` (this discards uncommitted changes) |
 | `vivado` not recognized (Windows) | Run `settings64.bat` from the Vivado install folder first |
+| Vivado sim fails with "Spawn failed" from an AI agent shell | Use `sim\run_sim.ps1`, which clears `NoDefaultCurrentDirectoryInExePath` |
 | Board not found when programming | Use the USB-PROG port, power switch ON, close other Vivado Hardware Manager windows |
 | push rejected (`fetch first`) | Run `git pull`, then `git push` again |

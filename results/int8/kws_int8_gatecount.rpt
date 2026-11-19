@@ -1,0 +1,4 @@
+Gate area 9.9792 um^2
+Level 0 Module kws_int8                                 Gates=      3875 Cells=    1280 Area=   38672.7 um^2
+Level 1 Module u_core                                   Gates=3875       Cells=1280     Area=   38672.7 um^2
+Level 2 Module u_core/csa_tree_add_89_43_groupi         Gates=556        Cells=227      Area=    5548.4 um^2

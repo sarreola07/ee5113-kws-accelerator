@@ -1,0 +1,6 @@
+model,bits,method,val_acc,test_acc,weight_memory_bytes,shift,acc_w,exported
+FP32,32,float,0.8789,0.8597,32768,,,
+INT8-PTQ,8,PTQ,0.8784,0.8613,8192,9,23,
+INT8-QAT,8,QAT,0.8851,0.8667,8192,9,23,yes
+INT4-PTQ,4,PTQ,0.8531,0.8374,4096,5,15,
+INT4-QAT,4,QAT,0.8753,0.8514,4096,5,15,yes

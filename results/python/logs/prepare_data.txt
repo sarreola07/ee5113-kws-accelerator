@@ -1,0 +1,38 @@
+Downloading https://storage.googleapis.com/download.tensorflow.org/data/speech_commands_v0.02.tar.gz
+Keeping only: yes, no, on, off, left, right (the archive is streamed, not saved)
+  downloaded       0 MB (0%)
+  downloaded     100 MB (4%)
+  downloaded     200 MB (8%)
+  downloaded     300 MB (12%)
+  downloaded     400 MB (16%)
+  downloaded     500 MB (21%)
+  downloaded     600 MB (25%)
+  downloaded     700 MB (29%)
+  downloaded     800 MB (33%)
+  downloaded     900 MB (37%)
+  downloaded    1000 MB (41%)
+  downloaded    1100 MB (45%)
+  downloaded    1200 MB (49%)
+  downloaded    1300 MB (54%)
+  downloaded    1400 MB (58%)
+  downloaded    1500 MB (62%)
+  downloaded    1600 MB (66%)
+  downloaded    1700 MB (70%)
+  downloaded    1800 MB (74%)
+  downloaded    1900 MB (78%)
+  downloaded    2000 MB (82%)
+  downloaded    2100 MB (86%)
+  downloaded    2200 MB (91%)
+  downloaded    2300 MB (95%)
+  downloaded    2400 MB (99%)
+Saved 23154 clips to C:\Users\CHIT\AppData\Local\Claude-Data\claude_pzs8sxrjxfjjc\scratch-workspaces\caddfed1-9632-40f7-8d58-258ebae63ea3\4e65b8eb-e227-4a11-80b2-916bbbc00822\scratch-2026-11-17-1dde5e\data\speech_commands
+Computing MFCC features...
+  train: 500/18470 clips  train: 1000/18470 clips  train: 1500/18470 clips  train: 2000/18470 clips  train: 2500/18470 clips  train: 3000/18470 clips  train: 3500/18470 clips  train: 4000/18470 clips  train: 4500/18470 clips  train: 5000/18470 clips  train: 5500/18470 clips  train: 6000/18470 clips  train: 6500/18470 clips  train: 7000/18470 clips  train: 7500/18470 clips  train: 8000/18470 clips  train: 8500/18470 clips  train: 9000/18470 clips  train: 9500/18470 clips  train: 10000/18470 clips  train: 10500/18470 clips  train: 11000/18470 clips  train: 11500/18470 clips  train: 12000/18470 clips  train: 12500/18470 clips  train: 13000/18470 clips  train: 13500/18470 clips  train: 14000/18470 clips  train: 14500/18470 clips  train: 15000/18470 clips  train: 15500/18470 clips  train: 16000/18470 clips  train: 16500/18470 clips  train: 17000/18470 clips  train: 17500/18470 clips  train: 18000/18470 clips  train: 18470/18470 clips
+  val: 500/2254 clips  val: 1000/2254 clips  val: 1500/2254 clips  val: 2000/2254 clips  val: 2254/2254 clips
+  test: 500/2430 clips  test: 1000/2430 clips  test: 1500/2430 clips  test: 2000/2430 clips  test: 2430/2430 clips
+Saved C:\Users\CHIT\AppData\Local\Claude-Data\claude_pzs8sxrjxfjjc\scratch-workspaces\caddfed1-9632-40f7-8d58-258ebae63ea3\4e65b8eb-e227-4a11-80b2-916bbbc00822\scratch-2026-11-17-1dde5e\data\features.npz
+  train  18470 clips  (yes=3228, no=3130, on=3086, off=2970, left=3037, right=3019)
+  val     2254 clips  (yes=397, no=406, on=363, off=373, left=352, right=363)
+  test    2430 clips  (yes=419, no=405, on=396, off=402, left=412, right=396)
+
+[exited with code 0]

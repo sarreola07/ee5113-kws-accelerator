@@ -1,57 +1,72 @@
 # Low-Precision Hardware Accelerator for Voice Keyword Recognition
 
 EE 5113 VLSI System Design: final project (UTSA). It is a small neural-network accelerator
-that recognizes 6 spoken words (**yes, no, on, off, up, down**). It is built at **INT8** and **INT4**
+that recognizes 6 spoken words (**yes, no, on, off, left, right**). It is built at **INT8** and **INT4**
 precision so the two can be compared on area, power, timing and accuracy, using:
 
-- **Python**: Google Speech Commands → MFCC → small FC network → INT8/INT4 quantization
-- **Verilog**: one shared MAC, FC-layer engine, ReLU and argmax (`rtl/`)
-- **Cadence Genus + Innovus**: 45 nm (gpdk045) synthesis and place & route on `crosby3.utsarr.net`
-- **Xilinx Vivado**: live demo on a Digilent **Nexys 4** (Artix-7 XC7A100T)
+- **Python**: Google Speech Commands → MFCC → small FC network → INT8/INT4 quantization (QAT)
+- **Verilog**: one shared MAC, ReLU + shift requantize, argmax, control FSM (`rtl/`), bit-exact with Python
+- **Cadence RTL Compiler + Innovus**: TSMC 180 nm (tsmc18) synthesis and place & route on `crosby3.utsarr.net`
+- **Xilinx Vivado**: simulation, and a live demo on a Digilent **Nexys 4 / Nexys 4 DDR / Nexys A7** (Artix-7)
 
 > **New machine or new partner? Start with [`docs/SETUP.md`](docs/SETUP.md).**
 > For the latest status, read the newest file in [`docs/progress/`](docs/progress/).
+> The final report is in [`docs/report/`](docs/report/).
 
 ## Architecture
 
 ```
-            ┌──────────── kws_top ────────────────────────────────────┐
- load_* ───►│ in_buf[250]──┐                                          │
-            │              ▼                                          │
-            │   W1/B1 ROM ─► fc_layer (1 MAC, reused) ─► relu ─► hid_buf[32]
-            │   W2/B2 ROM ─►    (layer 1, then layer 2)               │
-            │                         └─► argmax ─► class_out (0..5)  │──► done
-            └──────────────────────────────────────────────────────────┘
+  input mem  ──x_data──►┐
+                        ├─► MUX ──► MAC (w × act + ACC) ──► ACC ──┬──► ReLU + round + >>SHIFT ──► hid_buf[32]
+  hid_buf[32] ─────────►┘              ▲                          └──► argmax ──► class_out, done
+  weight mem ──w_data──────────────────┘
+  bias mem   ──b_data──► ACC (loaded at the start of each neuron)
+  (FSM: IDLE → BIAS → MAC × N → POST → … → DONE; addresses are simple counters)
 ```
 
-- Layer 1 is 250 inputs → 32 hidden, with ReLU and a power-of-two requantize.
-- Layer 2 is 32 → 6 logits, followed by argmax.
-- Each clip takes about 8,300 cycles, which is 83 µs at 100 MHz.
-- The bit width, sizes and weights come from `weights/<prec>/`, which `python/quantize_export.py` generates.
+- Layer 1 is 250 inputs → 32 hidden, with ReLU and a round-half-up power-of-two requantize.
+- Layer 2 is 32 → 6 scores, followed by argmax (ties → lowest index, like numpy).
+- One clip takes **8,270 cycles** (82.7 µs at 100 MHz).
+- The ASIC keeps the weights (8 KB / 4 KB), biases and inputs in external memory; the FPGA demo puts them
+  in ROMs (`fpga/kws_fpga_core.v`).
+
+## Results (tsmc18, slow corner, 100 MHz)
+
+| | INT8 | INT4 | INT4 vs INT8 |
+|---|---|---|---|
+| Test accuracy (2,430 clips; hardware = Python) | 86.7 % | 85.1 % | −1.5 points |
+| Chip area after routing | 79,401 µm² | 46,802 µm² | −41 % |
+| Power after routing | 3.84 mW | 1.92 mW | −50 % |
+| Max clock (core, synthesis) | 268 MHz | 315 MHz | +18 % |
+| Setup slack @ 100 MHz / DRC | +0.079 ns / clean | +0.228 ns / clean | |
+
+Details: [`results/RESULTS.md`](results/RESULTS.md). Reports: `results/int8/`, `results/int4/`, `results/fpga/`.
 
 ## Repository map
 
 | Path | Contents |
 |------|----------|
-| `python/` | `train.py` (float model), `quantize_export.py` (INT8/INT4 export), `kws_common.py` (bit-exact golden model) |
-| `weights/<int8,int4>/` | Generated ROMs (`kws_rom.v`), params (`kws_params.vh`), test vectors, `summary.json` |
-| `rtl/` | `mac.v`, `fc_layer.v`, `relu.v`, `argmax.v`, `kws_top.v` |
-| `tb/`, `sim/run_sim.sh` | Self-checking testbenches. Xcelium (crosby3) or Icarus (laptop) |
-| `flow/` | `config.tcl` (library paths), `constraints.sdc`, `syn/genus.tcl`, `pnr/innovus.tcl`, `run.sh` |
-| `fpga/` | `fpga_top.v`, Nexys 4 / 4 DDR pin constraints, Vivado `build.tcl` / `program.tcl` |
-| `results/` | Curated reports that are committed for the report and slides |
-| `docs/` | `SETUP.md`, `progress/` milestone logs, `report/`, `slides/`, `reference/` (proposal, guidelines, tutorial) |
+| `python/` | `train.py` (FP32 + PTQ/QAT), `quant.py` (**bit-exact golden model**), `export_hw.py`, `prepare_data.py`, `mfcc.py` |
+| `weights/<int8,int4>/` | Generated: `weights.mem`, `biases.mem`, test clips and expected values, `kws_params.vh` |
+| `rtl/` | `kws_accel.v` (core), `kws_top.v` (`kws_int8`, `kws_int4` chip tops) |
+| `tb/`, `sim/` | Self-checking testbenches; `sim/run_sim.ps1` (Windows) / `sim/run_sim.sh`; `sim/vivado/` GUI project |
+| `flow/tsmc18/` | RTL Compiler + Innovus scripts, constraints, pin files, `RUN_GUIDE.md`, `results.sh`, `save_results.sh` |
+| `fpga/` | Board top, ROM files, Nexys 4 / 4 DDR pins, `build.tcl` / `program.tcl` (+ `.bat` / `.sh`) |
+| `results/` | Curated reports (ASIC `int8/`, `int4/`; `fpga/` incl. bitstreams; `python/` accuracy, models, figures) |
+| `docs/` | `SETUP.md`, `progress/` milestone logs, `report/` (final report + screenshots), `slides/`, `reference/` |
+| `alt/sergio_bram_design/` | The other version of the design (on-chip ROMs, Genus/gpdk045 flow), kept intact |
 | `CLAUDE.md` | Instructions Claude follows on every machine |
 
 ## Quick commands
 
 ```bash
-python python/quantize_export.py --synthetic      # placeholder weights, no dataset
-python python/train.py && python python/quantize_export.py   # real model (laptop)
-./sim/run_sim.sh int8                              # RTL vs Python golden → TEST PASSED
-./sim/run_sim.sh int8 fpga                         # board-level sim of the FPGA top
-./flow/run.sh all int8 && ./flow/run.sh save int8  # crosby3: Genus + Innovus, keep reports
-fpga\build.bat int8 nexys4ddr program              # Windows: build + program the board
+.\sim\run_sim.ps1 int8                             # Windows + Vivado: RTL vs Python → TEST PASSED (also int4)
+./sim/run_sim.sh int8                              # Linux/crosby3 (xsim, Xcelium or Icarus)
+./sim/run_sim.sh fpga                              # board-level test of the FPGA top
+python python/train.py && python python/export_hw.py   # retrain + re-export (needs the dataset)
+cd flow/tsmc18 && rc -f syn_int8.g && innovus -files pnr_int8.tcl   # crosby3 (see RUN_GUIDE.md)
+fpga\program.bat nexys4ddr                         # Windows: load the prebuilt bitstream on the board
+fpga\build.bat nexys4                              # Windows: rebuild for the original Nexys 4
 ```
 
 ## Status
@@ -59,15 +74,17 @@ fpga\build.bat int8 nexys4ddr program              # Windows: build + program th
 | Item | Status |
 |------|--------|
 | Repo, docs, collaboration workflow | ✅ done |
-| RTL + testbench (bit-exact vs Python, INT8 & INT4) | ✅ passes with **synthetic** weights |
-| FPGA top + Nexys 4 constraints | ✅ simulated; ⏳ first Vivado build on the board |
-| Training pipeline (NumPy) + INT6 export | ✅ ready, tested on fake data; real training run ⏳ (see the 2026-11-19 log) |
-| gpdk045 paths in `flow/config.tcl` + first Genus/Innovus run | ⏳ needs crosby3 |
-| Results tables, report, slides | ⏳ |
+| Model trained on Speech Commands, INT8/INT4 QAT export | ✅ 86.7 % / 85.1 % |
+| RTL + testbench (bit-exact vs Python, every layer, 200 real clips) | ✅ 0 mismatches, INT8 & INT4 |
+| Synthesis + place & route (tsmc18), DRC/connectivity/antenna | ✅ both precisions, timing met at 100 MHz |
+| FPGA demo (both precisions, 200 clips, run-all check) | ✅ simulated; bitstreams in `results/fpga/`; ⏳ test on the board |
+| Final report | ✅ `docs/report/` ; ⏳ slides |
+| Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 
 ## Progress log
 
 | Date | Milestone |
 |------|-----------|
 | 2026-11-18 | [Repository and environment set up](docs/progress/2026-11-18-repo-setup.md) |
-| 2026-11-19 | [Testbench upgrade, INT6 export, NumPy training pipeline](docs/progress/2026-11-19-numpy-training-pipeline.md) |
+| 2026-11-19 | [Testbench upgrade, INT6 export, NumPy training pipeline](docs/progress/2026-11-19-numpy-training-pipeline.md) (now in `alt/`) |
+| 2026-11-19 | [Combined repo: trained model, tsmc18 ASIC results, FPGA demo, report](docs/progress/2026-11-19-combined-design.md) |

@@ -65,3 +65,13 @@ desktop.ini
 .vscode/
 *.swp
 *~
+
+# ---- tsmc18 ASIC flow (flow/tsmc18): licensed course library files + run outputs ----
+flow/tsmc18/*.lib
+flow/tsmc18/*.lef
+flow/tsmc18/gds2_innovus-2.map
+flow/tsmc18/out_*/
+flow/tsmc18/fv/
+
+# ---- Vivado GUI simulation project (sim/vivado/create_project.tcl makes it) ----
+sim/vivado/kws_sim/
