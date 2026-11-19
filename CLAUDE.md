@@ -69,6 +69,7 @@ Two students work on it from Mac, Windows and crosby3, and GitHub is how they st
 
 ```bash
 python python/quantize_export.py --synthetic   # placeholder weights (no dataset)
+python -m unittest discover -s python -p "test_*.py"     # unit tests (no dataset)
 python python/train.py && python python/quantize_export.py   # real model
 ./sim/run_sim.sh int8          # RTL vs golden (also int4)
 ./sim/run_sim.sh int8 fpga     # board-level test of fpga/fpga_top.v

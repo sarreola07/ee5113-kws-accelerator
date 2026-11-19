@@ -61,7 +61,7 @@ fpga\build.bat int8 nexys4ddr program              # Windows: build + program th
 | Repo, docs, collaboration workflow | ✅ done |
 | RTL + testbench (bit-exact vs Python, INT8 & INT4) | ✅ passes with **synthetic** weights |
 | FPGA top + Nexys 4 constraints | ✅ simulated; ⏳ first Vivado build on the board |
-| Train the real model on Speech Commands | ⏳ |
+| Training pipeline (NumPy) + INT6 export | ✅ ready, tested on fake data; real training run ⏳ (see the 2026-11-19 log) |
 | gpdk045 paths in `flow/config.tcl` + first Genus/Innovus run | ⏳ needs crosby3 |
 | Results tables, report, slides | ⏳ |
 
@@ -70,3 +70,4 @@ fpga\build.bat int8 nexys4ddr program              # Windows: build + program th
 | Date | Milestone |
 |------|-----------|
 | 2026-11-18 | [Repository and environment set up](docs/progress/2026-11-18-repo-setup.md) |
+| 2026-11-19 | [Testbench upgrade, INT6 export, NumPy training pipeline](docs/progress/2026-11-19-numpy-training-pipeline.md) |

@@ -1,4 +1,1 @@
 numpy>=1.24
-torch>=2.0
-torchaudio>=2.0
-soundfile>=0.12   # audio backend for torchaudio on Windows/Mac

@@ -10,7 +10,7 @@
 | Task | Machine | Tools |
 |------|---------|-------|
 | Edit code and docs, use Claude | any laptop (Mac or Windows) | Git, VS Code (optional), Claude Code |
-| Train and quantize the network | any laptop | Python 3.10+, PyTorch, torchaudio |
+| Train and quantize the network | any laptop or a Linux lab machine | Python 3.8+ and NumPy (see `python/README.md`) |
 | RTL simulation (quick check) | any laptop, or crosby3 | Icarus Verilog (laptop) / Xcelium (crosby3) |
 | Synthesis + place & route | **crosby3.utsarr.net** only | Cadence Genus + Innovus, gpdk045 |
 | FPGA build + program Nexys 4 | **Windows** laptop (or Linux) | Xilinx Vivado (not available for macOS) |
