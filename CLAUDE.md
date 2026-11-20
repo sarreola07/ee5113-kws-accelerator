@@ -82,7 +82,10 @@ Two students work on it from Mac, Windows and crosby3, and GitHub is how they st
 ./sim/run_sim.sh int8                  # Linux/crosby3: xsim, Xcelium or Icarus (also int4, fpga)
 python python/quick_test.py            # 1-minute pipeline check (after prepare_data.py downloaded the dataset)
 python python/prepare_data.py && python python/train.py && python python/export_hw.py   # full retrain
-python fpga/gen_fpga_mem.py            # FPGA ROM files after a re-export
+python fpga/gen_fpga_mem.py            # FPGA ROM files after a re-export (--check: is fpga/mem up to date?)
+python python/export_frontend.py       # weights/frontend.npz for live words (--verify: 50,000/50,000 identical)
+python fpga/kws_live.py --selftest     # board == Python over the USB-UART (--mock: no board needed)
+python fpga/kws_live.py --mic          # live words from the PC microphone
 cd flow/tsmc18 && rc -f syn_int8.g && rc -f fmax_int8.g && innovus -files pnr_int8.tcl   # crosby3
 cd flow/tsmc18 && bash results.sh      # INT8 vs INT4 table from the reports
 fpga\build.bat nexys4ddr               # Windows: build (nexys4ddr | nexys4 | nexys_a7_50t), ~25 min
@@ -90,7 +93,8 @@ fpga\program.bat nexys4ddr             # Windows: load results/fpga/kws_fpga_top
 ```
 
 Expected results: RTL 0 mismatches on 200 clips (INT8 176/200 correct, INT4 177/200); FPGA BTNU
-run-all shows `176  200` (INT8) and `177  200` (INT4); ASIC numbers in `results/RESULTS.md`.
+run-all shows `PASS 176` (INT8) and `PASS 177` (INT4), SW14 fault test `F000 199`;
+`kws_live.py --selftest` prints `SELFTEST PASSED`; ASIC numbers in `results/RESULTS.md`.
 
 ## Problems that were already solved (keep these fixes)
 
@@ -100,10 +104,13 @@ run-all shows `176  200` (INT8) and `177  200` (INT4); ASIC numbers in `results/
    them as enable flops and Innovus stops placement with IMPSP-9099.
 3. **Fmax** – RC area recovery pushes the 100 MHz slack to ~0, so Fmax comes from the separate 2 ns runs
    (`fmax_int*.g`, `kws_fast.sdc`): Fmax = 1 / (2 ns − slack).
-4. **FPGA clock** – the LUT ROMs + MAC path is ~14 ns on the Artix-7, so `kws_fpga_top.v` runs at 50 MHz from
+4. **FPGA clock** – the LUT ROMs + MAC path is ~17 ns on the Artix-7 (`results/fpga/nexys4ddr/timing_summary.rpt`), so `kws_fpga_top.v` runs at 50 MHz from
    an MMCM (at 100 MHz the route had WNS −4.4 ns). The core needs same-cycle (asynchronous) memory reads, so
    the ROMs must stay distributed; moving them to block RAM needs a core change (see `alt/` for that style).
 5. **Paths with spaces** – in Vivado Tcl pass paths to `add_files` inside `[list ...]`; give
    `xsim.simulate.custom_tcl` a relative path; don't pass `-d A=B` to `xvlog.bat` (the batch file splits at `=`).
 6. **Vivado from an agent shell** – if Vivado runs fail with "Spawn failed: Broken pipe", remove
    `NoDefaultCurrentDirectoryInExePath` from the environment before starting it (`sim/run_sim.ps1` does this).
+7. **FPGA self-check** – BTNU compares every class and all 6 output scores with Python. `Err ----` means
+   the golden-data checksum (`fpga/mem/<p>_check.mem`) failed, i.e. a `.mem` file was missing or stale at
+   build time; Vivado fills a missing ROM with zeros, which used to show a false `200 200`.

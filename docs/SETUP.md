@@ -136,25 +136,54 @@ go in `alt/sergio_bram_design/flow/config.tcl`.
    - **Nexys A7-50T** → `nexys_a7_50t`
 
    The pin files in `fpga/constraints/` follow Digilent's official master XDC files.
-2. Plug in the board's USB-PROG port and power it on.
+2. Plug the micro-USB cable into the board's **PROG/UART** port and power it on. The same cable carries
+   programming and the UART used for live words.
 3. Open a **Command Prompt** in the repo folder. If `vivado` isn't found, first run
-   `C:\Xilinx\Vivado\<version>\settings64.bat`. Then load the prebuilt bitstream:
-   ```bat
-   fpga\program.bat nexys4ddr
-   ```
-   or rebuild it first (about 25 minutes; writes `results\fpga\kws_fpga_top_<board>.bit` and reports):
+   `C:\Xilinx\Vivado\<version>\settings64.bat`. Build and load the bitstream:
    ```bat
    fpga\build.bat nexys4 program
    ```
-   Check `results\fpga\<board>\timing_summary.rpt`: no negative slack. The design runs at 50 MHz (MMCM).
-4. On the board (both INT8 and INT4 are in one bitstream):
-   - **SW7–SW0**: test clip number 0–199. **SW15**: down = INT8, up = INT4.
-   - **BTNC**: run that clip. The right digits show the word (YES / nO / On / OFF / LEFt / rIGHt),
-     the left digits the clip number. LED[2:0] = word, LED[6:4] = true word, LED12 = correct,
-     LED13 = same answer as Python.
-   - **BTNU**: run all 200 clips. Expect `176  200` (INT8) and `177  200` (INT4): words correct, and
-     clips that match Python.
-5. To keep new numbers for the report, commit `results/fpga/`.
+   - It takes about 25 minutes and writes `results\fpga\kws_fpga_top_<board>.bit` and the reports.
+   - **It stops with an error, and does not copy the bitstream, if setup or hold timing fails.**
+   - The design runs at 50 MHz (MMCM).
+   - `fpga\program.bat <board>` only loads an existing bitstream again. Rebuild after any change to `rtl/`, `fpga/`
+     or the `.mem` files.
+4. **Controls** (INT8 and INT4 are both in one bitstream):
+   - **SW7–SW0**: test clip 0–199. **SW15**: down = INT8, up = INT4. **SW14**: fault test (see below).
+   - **BTNC**: run one clip. The right digits show the word (YES / nO / On / OFF / LEFt / rIGHt), the left digits
+     the clip.
+   - **LEDs:**
+     - LED[2:0] = word, LED[6:4] = true word;
+     - LED12 = correct; LED13 = class and all 6 scores match Python;
+     - LED11 = SW14 is up, LED14 = busy;
+     - LED16 (RGB): green = matches Python, red = differs, blue = running.
+5. **Self-check: is the board doing the same math as Python?** BTNU runs all 200 clips. For each one it compares the
+   class **and all 6 output scores** with the Python integer model.
+
+   | Do | Expect |
+   |---|---|
+   | SW15 down, BTNU | green LED16, `PASS 176` (every clip matches Python; 176 words correct) |
+   | SW15 up, BTNU | green LED16, `PASS 177` |
+   | SW14 up, SW15 down, BTNU, then SW14 down again | red LED16, `F000 199`: the fault test corrupted clip 0, so the checker must fail there |
+
+   - `F<nnn> <mmm>`: clip `nnn` was the first to differ from Python, and `mmm` clips matched.
+   - `Err ----`: the board's golden data failed its checksum, which means a `.mem` file was missing or damaged when the
+     bitstream was built. Run `python fpga/gen_fpga_mem.py --check`, regenerate if it says so, and rebuild.
+6. **Live words from your voice** (PC microphone → PC computes MFCC → board recognizes the word):
+   ```bat
+   pip install -r fpga/requirements-live.txt
+   python fpga/kws_live.py --selftest
+   python fpga/kws_live.py --mic
+   ```
+   - `--selftest` sends the 200 test clips through the UART and checks every reply against Python. Expect
+     `SELFTEST PASSED` with 200/200 for INT8 and INT4. Run this first: it proves the cable, the port and the board.
+   - `--mic`: press Enter and say one word. The board shows `LI <word>`, and the PC prints the board's answer, the 6
+     scores and whether the Python model gives the same answer.
+   - Options: `--prec int4`, `--save recordings` (keeps each recording as a .wav), `--wav file.wav`, `--port COM5`.
+   - Live accuracy will be lower than the 86.7 % test accuracy: a different microphone, room noise, and the
+     word's position in the 1-second window. Speak clearly, close to the microphone, one word per recording.
+   - `--mock` runs the same script with a software model instead of the board (no hardware needed).
+7. To keep new numbers for the report, commit `results/fpga/` and write down what the board showed in a progress log.
 
 ## 5. Daily workflow (both partners)
 
@@ -197,6 +226,9 @@ git push                              # 5. partner pulls to continue
 
 | Symptom | Fix |
 |---------|-----|
+| `kws_live.py`: "No board answered" | Program the bitstream from this branch (an older one has no UART), use the PROG/UART micro-USB port, close any serial terminal, or pass `--port COMx` (Device Manager → Ports) |
+| BTNU shows `Err ----` | A `.mem` file was missing or stale when the bitstream was built: `python fpga/gen_fpga_mem.py --check`, then rebuild |
+| `--mic` hears nothing (macOS) | Allow microphone access for Terminal in System Settings → Privacy & Security |
 | `rc: command not found` / `innovus: command not found` | You forgot `source /home/opt2/setmyenv` in this terminal |
 | RC/Innovus can't find `slow.lib` or `all.lef` | Copy the tsmc18 files into `flow/tsmc18/` (§3) |
 | Cadence GUI doesn't appear (Mac) | Install XQuartz, reconnect with `ssh -Y`, run `echo $DISPLAY` (must not be empty) |
