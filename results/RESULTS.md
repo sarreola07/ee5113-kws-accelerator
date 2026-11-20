@@ -58,19 +58,22 @@ for a 1.5-point drop in accuracy (86.7 % → 85.1 %).
    and Innovus stopped placement with IMPSP-9099 ("scan chains exist but are not defined").
    Synthesis now marks `SDFF*`/`SEDFF*` as `avoid`. The design has no scan chain anyway.
 
-## FPGA (Vivado 2024.2, Nexys 4 DDR / Nexys A7-100T, xc7a100tcsg324-1)
+## FPGA (Vivado 2024.2, Artix-7 xc7a100tcsg324-1)
 
 Both chips (INT8 and INT4) in one bitstream, weights and the 200 test clips in distributed (LUT) ROMs,
-50 MHz clock from an MMCM. Prebuilt file: `results/fpga/kws_fpga_top_nexys4ddr.bit`.
+50 MHz clock from an MMCM. The board runs a power-on self-test (all 200 clips on both precisions) and is
+then driven by the switches, or by words from the PC microphone (`fpga/mic_demo.py` sends each word's
+INT8 and INT4 inputs over the USB-UART); see the README for the controls.
 
-| Metric | Value |
-|--------|-------|
-| Slice LUTs | 12,891 of 63,400 (20.3 %) |
-| Slice registers | 602 (0.5 %) |
-| Block RAM / DSP | 0 / 0 |
-| MMCM | 1 |
-| Setup WNS / hold WHS at 50 MHz | +2.796 ns / +0.027 ns (0 failing endpoints) |
-| One clip | 8,270 cycles = 165 µs at 50 MHz |
+| Metric | Nexys 4 (`nexys4`) | Nexys 4 DDR / A7-100T (`nexys4ddr`) |
+|--------|--------------------|-------------------------------------|
+| Bitstream | `results/fpga/kws_fpga_top_nexys4.bit` | `results/fpga/kws_fpga_top_nexys4ddr.bit` |
+| Slice LUTs | 13,761 of 63,400 (21.7 %), 82 of them LUT RAM | 13,762 (21.7 %), 82 of them LUT RAM |
+| Slice registers | 1,371 (1.1 %) | 1,431 (1.1 %) |
+| Block RAM / DSP / MMCM | 0 / 0 / 1 | 0 / 0 / 1 |
+| Setup WNS / hold WHS at 50 MHz | +0.673 ns / +0.024 ns | +1.116 ns / +0.095 ns |
+| One clip | 8,270 cycles = 165 µs | same |
+| Board-level simulation | self-test 176/200 (INT8), 177/200 (INT4), 400/400 same as Python | same, plus words sent from the PC |
+| On the board (Nexys A7-100T) | | self-test PASS; `fpga/mic_demo.py --clips`: the 200 clips sent from the PC over the UART give INT8 176/200, INT4 177/200, 400/400 same as Python; 12/12 text-to-speech words right |
 
-Reports: `results/fpga/nexys4ddr/timing_summary.rpt`, `utilization.rpt`.
-
+Reports: `results/fpga/<board>/timing_summary.rpt`, `utilization.rpt`.

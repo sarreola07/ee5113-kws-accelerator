@@ -26,6 +26,8 @@ python python/prepare_data.py
 ```
 Downloads Google Speech Commands v0.02 (~2.3 GB stream, only the chosen words are kept,
 about 700 MB) and computes MFCC features into `python/data/features.npz` (git-ignored).
+It also writes the small `results/python/feature_norm.npz` (feature mean/std, committed), which
+`fpga/mic_demo.py` uses to normalize words from the PC microphone the same way.
 
 ```bash
 python python/train.py
@@ -79,6 +81,7 @@ python python/train.py --features python/data/features_synthetic.npz
 | `python/make_figures.py` | Step 4 (optional): slide images in `results/python/figures/` |
 | `results/python/results.csv` | Accuracy and memory size per model (for the report table) |
 | `results/python/confusion_*.csv` | Confusion matrix per model |
+| `results/python/feature_norm.npz` | Feature mean/std + typical loudness, for live audio (`fpga/mic_demo.py`) |
 
 ## Network
 

@@ -125,6 +125,18 @@ def synthetic_split(words, n_per_class=300):
     return (X[:a], y[:a]), (X[a:b], y[a:b]), (X[b:], y[b:])
 
 
+def save_norm(mean, std, X_raw):
+    """Small copy of the normalization for live audio (fpga/mic_demo.py). Unlike features.npz
+    it is committed. c0_max_median = typical loudness: the median over the training clips of
+    the largest first MFCC coefficient (mic_demo.py scales live audio to it)."""
+    c0_max = np.asarray(X_raw).reshape(len(X_raw), C.N_FRAMES, C.N_MFCC)[:, :, 0].max(axis=1)
+    C.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    path = C.RESULTS_DIR / "feature_norm.npz"
+    np.savez(path, mean=mean.astype(np.float32), std=std.astype(np.float32),
+             c0_max_median=np.float32(np.median(c0_max)))
+    print(f"Saved {path}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--synthetic", action="store_true", help="use fake tone data (pipeline test)")
@@ -153,6 +165,8 @@ def main():
     np.savez_compressed(out, X_train=norm(Xtr), y_train=ytr, X_val=norm(Xva), y_val=yva,
                         X_test=norm(Xte), y_test=yte, mean=mean, std=std, words=np.array(words))
     print(f"Saved {out}")
+    if not args.synthetic:
+        save_norm(mean, std, Xtr)
     for name, y in (("train", ytr), ("val", yva), ("test", yte)):
         counts = ", ".join(f"{w}={c}" for w, c in zip(words, np.bincount(y, minlength=len(words))))
         print(f"  {name:5s} {len(y):6d} clips  ({counts})")
