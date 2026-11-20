@@ -83,7 +83,7 @@ python sim/uart_xcheck.py                          # no board: kws_live.py packe
 | FPGA demo (both precisions, 200 clips) | ✅ simulated; ✅ Nexys 4 DDR/A7 bitstream built (50 MHz, WNS +2.8 ns), before the self-check below |
 | FPGA bit-exact self-check (PASS / FAIL / Err, SW14 fault test) | ✅ simulated; ⏳ rebuild from `sergio/board-check-live-voice` and test on the board |
 | Live words from a microphone (USB-UART + `fpga/kws_live.py`) | ✅ simulated, cross-checked with Python; ⏳ on the board |
-| Final report | ✅ `docs/report/` ; ⏳ slides |
+| Final report and slides | ✅ `docs/report/` ; 🟡 slides: 14-slide mock in the course's order, board results still placeholders (`docs/slides/`) |
 | Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 
 ## Progress log
@@ -94,3 +94,4 @@ python sim/uart_xcheck.py                          # no board: kws_live.py packe
 | 2026-11-19 | [Testbench upgrade, INT6 export, NumPy training pipeline](docs/progress/2026-11-19-numpy-training-pipeline.md) (now in `alt/`) |
 | 2026-11-19 | [Combined repo: trained model, tsmc18 ASIC results, FPGA demo, report](docs/progress/2026-11-19-combined-design.md) |
 | 2026-11-20 | [Design comparison, review notes, board self-check, live words](docs/progress/2026-11-20-design-comparison-board-check.md) |
+| 2026-11-20 | [Presentation deck: mock with placeholders, sources of every number](docs/progress/2026-11-20-slides-draft.md) |
