@@ -56,6 +56,7 @@ fpga\build.bat nexys4ddr                                         :: only to rebu
 | `python/prepare_data.py`, `results/python/feature_norm.npz` | Normalization for live audio | `fpga/mic_demo.py` |
 | `python/requirements.txt` | + pyserial, sounddevice (only for the microphone demo) | pip |
 | `results/fpga/kws_fpga_top_nexys4ddr.bit`, `results/fpga/nexys4ddr/*.rpt` | Rebuilt with the microphone input | `fpga/program.bat nexys4ddr` |
+| `results/fpga/kws_fpga_top_nexys4.bit`, `results/fpga/nexys4/*.rpt` | Same for the original Nexys 4 | `fpga/program.bat nexys4` |
 | `README.md`, `docs/SETUP.md`, `CLAUDE.md`, `results/RESULTS.md`, `python/README.md` | How to use it | everyone |
 
 ## Results
@@ -63,6 +64,7 @@ fpga\build.bat nexys4ddr                                         :: only to rebu
 |-------|--------|
 | `run_sim.ps1 fpga` (steps 0–12) | FPGA TOP TEST PASSED; after a reset with switches down `rEAdY`; PC words "clip 5" → `  1  YES`, "clip 2" → `  2 LEFt`, both `-> same as Python`; bad checksum ignored |
 | PC front end on Windows text-to-speech words (2 voices × 6 words) | 12/12 recognized by the Python integer model (with and without loudness scaling) |
+| FPGA build (`nexys4`, original Nexys 4, 18 min) | 13,761 LUTs (21.7 %), 1,371 registers; WNS +0.673 ns / WHS +0.024 ns at 50 MHz (not tried on that board) |
 | FPGA build (`nexys4ddr`, 18 min) | 13,762 LUTs (21.7 %, of which 82 LUT RAM), 1,431 registers, 0 BRAM / 0 DSP; WNS +1.116 ns / WHS +0.095 ns at 50 MHz |
 | Board (Nexys A7-100T): self-test | `SELF-TEST PASS: INT8 176/200 correct, 200/200 same as Python; INT4 177/200 correct, 200/200 same as Python` |
 | Board: `mic_demo.py --clips` | 200 clips sent from the PC in 13 s: INT8 176/200 correct, INT4 177/200, 400/400 same as Python -> PASS |
@@ -75,4 +77,5 @@ fpga\build.bat nexys4ddr                                         :: only to rebu
 
 ## Next steps
 - [ ] Photo / short video of a spoken word on the display for the report and slides.
-- [ ] Rebuild `kws_fpga_top_nexys4.bit` (original Nexys 4) with the microphone input.
+- [x] Rebuild `kws_fpga_top_nexys4.bit` (original Nexys 4) with the microphone input (built; not tried on that board).
+- [ ] Compare with `sergio/board-check-live-voice` (same features, other design) and pick one for `main`.

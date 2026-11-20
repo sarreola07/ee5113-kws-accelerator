@@ -109,7 +109,7 @@ fpga\build.bat nexys4                              # Windows: rebuild for the or
 | Model trained on Speech Commands, INT8/INT4 QAT export | ✅ 86.7 % / 85.1 % |
 | RTL + testbench (bit-exact vs Python, every layer, 200 real clips) | ✅ 0 mismatches, INT8 & INT4 |
 | Synthesis + place & route (tsmc18), DRC/connectivity/antenna | ✅ both precisions, timing met at 100 MHz |
-| FPGA demo (switches, power-on self-test, UART report, PC microphone) | ✅ simulated; ✅ on a Nexys A7-100T: self-test PASS, 200 clips sent from the PC = Python (400/400); ✅ bitstreams (50 MHz, timing met): Nexys 4 DDR/A7 with the microphone input, Nexys 4 switches only (⏳ rebuild) |
+| FPGA demo (switches, power-on self-test, UART report, PC microphone) | ✅ simulated; ✅ on a Nexys A7-100T: self-test PASS, 200 clips sent from the PC = Python (400/400); ✅ bitstreams for Nexys 4 DDR/A7 and Nexys 4, both with the microphone input (50 MHz, timing met) |
 | Final report | ✅ `docs/report/` ; ⏳ slides |
 | Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 
