@@ -1,3 +1,6 @@
 numpy>=1.26
 torch>=2.5
 matplotlib>=3.8
+# only for the board demo with the PC microphone (fpga/mic_demo.py)
+pyserial>=3.5
+sounddevice>=0.4

@@ -61,9 +61,11 @@ set_property -dict { PACKAGE_PIN F15 IOSTANDARD LVCMOS33 } [get_ports { BTNU }]
 
 ## USB-UART, FPGA -> PC (Digilent's name: RsTx); 115200 baud text report
 set_property -dict { PACKAGE_PIN D4  IOSTANDARD LVCMOS33 } [get_ports { UART_TXD }]
+## USB-UART, PC -> FPGA (Digilent's name: RsRx); words from fpga/mic_demo.py
+set_property -dict { PACKAGE_PIN C4  IOSTANDARD LVCMOS33 } [get_ports { UART_RXD }]
 
-## Asynchronous inputs (switches, buttons) do not need timing
-set_false_path -from [get_ports { SW[*] SW14 SW15 BTNC BTNU CPU_RESETN }]
+## Asynchronous inputs (switches, buttons, UART input) do not need timing
+set_false_path -from [get_ports { SW[*] SW14 SW15 BTNC BTNU CPU_RESETN UART_RXD }]
 
 ## Configuration
 set_property CFGBVS VCCO [current_design]

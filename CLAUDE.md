@@ -87,11 +87,14 @@ cd flow/tsmc18 && rc -f syn_int8.g && rc -f fmax_int8.g && innovus -files pnr_in
 cd flow/tsmc18 && bash results.sh      # INT8 vs INT4 table from the reports
 fpga\build.bat nexys4ddr               # Windows: build (nexys4ddr | nexys4 | nexys_a7_50t), ~25 min
 fpga\program.bat nexys4                # Windows: load results/fpga/kws_fpga_top_<board>.bit
+python fpga/mic_demo.py                # PC microphone -> board shows the word (--clips: 200 test clips over UART)
 ```
 
 Expected results: RTL 0 mismatches on 200 clips (INT8 176/200 correct, INT4 177/200); FPGA power-on
 self-test shows `PASS` (LED11 on), SW14-up run-all shows `176  200` (INT8) and `177  200` (INT4), and the
-USB-UART (115200 baud) prints the same lines; ASIC numbers in `results/RESULTS.md`.
+USB-UART (115200 baud) prints the same lines; with all switches down the board shows ` rEAdY  ` and
+`fpga/mic_demo.py` words show as `  1  YES` etc. (`--clips`: INT8 176/200, INT4 177/200, 400/400 same as
+Python over the UART); ASIC numbers in `results/RESULTS.md`.
 
 ## Problems that were already solved (keep these fixes)
 

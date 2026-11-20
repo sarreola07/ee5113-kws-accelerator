@@ -7,6 +7,8 @@
 // ROMs are built from LUTs (distributed ROM), not block RAM.
 // Clip c of the 200 test clips starts at address c*256, so the input address
 // is just {clip, x_addr} (no adder needed).
+// With live = 1 the inputs come from x_live instead (a word from the PC microphone,
+// held in a small memory in the top level that is read at x_addr).
 //============================================================================
 `timescale 1ns/1ps
 
@@ -24,6 +26,9 @@ module kws_fpga_core #(
     input  wire       rst_n,
     input  wire       start,      // 1-cycle pulse
     input  wire [7:0] clip,       // test clip 0..199, held during an inference
+    input  wire       live,       // 1 = inputs from x_live (PC microphone), 0 = test clip ROM
+    input  wire [BW-1:0] x_live,  // live input value at x_addr
+    output wire [7:0] x_addr,     // input the core reads now
     output wire       busy,
     output wire       done,       // 1-cycle pulse, class_out is valid
     output wire [2:0] class_out,  // recognized word
@@ -44,10 +49,9 @@ module kws_fpga_core #(
         $readmemh(L_FILE, lrom);
     end
 
-    wire [7:0]       x_addr;
     wire [12:0]      w_addr;
     wire [5:0]       b_addr;
-    wire [BW-1:0]    x_data = xrom[{clip, x_addr}];
+    wire [BW-1:0]    x_data = live ? x_live : xrom[{clip, x_addr}];
     wire [BW-1:0]    w_data = wrom[w_addr];
     wire [ACC_W-1:0] b_data = brom[b_addr];
 

@@ -3,7 +3,7 @@
 > **This is the living setup guide.** If you follow it from top to bottom on a
 > fresh machine, you should end up able to run every part of the project.
 > Whenever a step changes, it is updated here, in the same commit as the change
-> (see `CLAUDE.md`). Last updated: **2026-11-19** (FPGA demo: switch control, power-on self-test, UART report).
+> (see `CLAUDE.md`). Last updated: **2026-11-20** (FPGA demo: words from the PC microphone, `fpga/mic_demo.py`).
 
 ## 0. What runs where
 
@@ -14,6 +14,7 @@
 | RTL simulation (bit-exact check) | Windows/Linux with Vivado, or crosby3 | Vivado xsim (`sim/run_sim.ps1`, `sim/run_sim.sh`), Xcelium (crosby3) or Icarus |
 | Synthesis + place & route | **crosby3.utsarr.net** only | Cadence RTL Compiler (`rc`) + Innovus 20.1, TSMC 180 nm (tsmc18) |
 | FPGA build + program the board | **Windows** laptop (or Linux) | Xilinx Vivado (not available for macOS) |
+| Speak to the board (PC microphone) | the PC the board is plugged into | Python with NumPy, pyserial, sounddevice (`fpga/mic_demo.py`) |
 
 GitHub (`https://github.com/sarreola07/ee5113-kws-accelerator`, public) is the
 single source of truth. Every machine has its own clone, and you move work between
@@ -164,7 +165,26 @@ go in `alt/sergio_bram_design/flow/config.tcl`.
      at **115200 baud** in PuTTY, Tera Term or any serial terminal. The board prints one line per result,
      e.g. `INT8 all 200 clips: 176/200 correct, 200/200 same as Python -> PASS`. Press CPU_RESET to see
      the self-test lines again.
-5. To keep new numbers for the report, commit `results/fpga/`.
+5. **Speak to the board (PC microphone, no switches needed).** Leave all switches down: after the
+   self-test the display shows ` rEAdY  `. On the PC (any Python 3.10+ with a microphone):
+   ```bat
+   python -m pip install numpy pyserial sounddevice
+   python fpga\mic_demo.py
+   ```
+   Stay quiet for the 1-second calibration, then say one word at a time (yes, no, on, off, left, right).
+   The display shows e.g. `  3  YES` (words heard so far, then the INT8 word; INT4 with SW15 up), LED10
+   is on, and LED13 is on when both FPGA answers are the same as Python. The PC prints one line per word:
+   ```
+     3: FPGA heard YES    (INT8 yes   INT4 yes   | Python INT8 yes   INT4 yes   -> same as Python)
+   ```
+   - The PC does the front end (MFCC, normalization with `results/python/feature_norm.npz`, INT8/INT4
+     quantization); the FPGA does the neural network. Only one program can open the COM port, so close
+     PuTTY / `monitor.ps1` first.
+   - No microphone? `python fpga\mic_demo.py --clips` sends the 200 test clips over the UART and checks
+     every answer (`--wav file.wav` classifies wav files). `--list` / `--device N` pick another microphone.
+   - It hears nothing: watch the level bar and speak louder or closer, or lower `--min-level` (default
+     0.01). It triggers on noise: raise `--threshold` (default 3 = 3x the room noise).
+6. To keep new numbers for the report, commit `results/fpga/`.
 
 ## 5. Daily workflow (both partners)
 

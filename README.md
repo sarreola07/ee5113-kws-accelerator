@@ -51,14 +51,27 @@ fpga\program.bat nexys4       :: original Nexys 4 (no "DDR")   -> results/fpga/k
 fpga\program.bat nexys4ddr    :: Nexys 4 DDR / Nexys A7-100T   -> results/fpga/kws_fpga_top_nexys4ddr.bit
 ```
 
+**Speak to it (no switches needed):** load the bitstream, leave all switches down, then on the PC run
+
+```bat
+python -m pip install numpy pyserial sounddevice   :: once
+python fpga\mic_demo.py                            :: say: yes, no, on, off, left, right
+```
+
+The PC records each word, computes its MFCC inputs (INT8 and INT4, as in `python/`) and sends them over
+the USB cable. The FPGA runs both accelerators and shows the word, e.g. `  3  YES` (3 = words heard so
+far). The PC prints the FPGA's answer next to the Python model's (`same as Python`).
+`python fpga\mic_demo.py --clips` does the same with the 200 test clips, without a microphone.
+
 | Control | What the board does |
 |---------|---------------------|
-| Power on / CPU_RESET | Self-test: all 200 clips on INT8 and INT4. The display shows `PASS` for 3 s and LED11 stays on (all 400 answers = Python) |
+| Power on / CPU_RESET | Self-test: all 200 clips on INT8 and INT4. The display shows `PASS` for 3 s and LED11 stays on (all 400 answers = Python). With all switches down it then shows ` rEAdY  ` |
+| PC microphone (`fpga/mic_demo.py`) | Each word runs on INT8 and INT4: `  3  YES` (INT8 word; INT4 with SW15 up). LED10 = word from the PC, LED13 = both same as Python |
 | SW7–SW0 | Clip number 0–199 in binary. With SW14 down the clip runs by itself: `  5  YES`, `  2 LEFt`, … |
 | SW14 up | All 200 clips: `176  200` (INT8) / `177  200` (INT4) = words correct, answers same as Python |
 | SW15 | Down = INT8, up = INT4 |
 | LEDs | LED[2:0] word heard, LED[6:4] true word, LED12 correct, LED13 same as Python, LED14 busy, LED15 INT4 |
-| USB-UART (115200 baud) | One text line per result: `powershell -ExecutionPolicy Bypass -File fpga\monitor.ps1` (or PuTTY) |
+| USB-UART (115200 baud) | One text line per result: `powershell -ExecutionPolicy Bypass -File fpga\monitor.ps1` (or PuTTY). `mic_demo.py` uses the same port, so close the monitor first |
 
 ## Repository map
 
@@ -69,7 +82,7 @@ fpga\program.bat nexys4ddr    :: Nexys 4 DDR / Nexys A7-100T   -> results/fpga/k
 | `rtl/` | `kws_accel.v` (core), `kws_top.v` (`kws_int8`, `kws_int4` chip tops) |
 | `tb/`, `sim/` | Self-checking testbenches; `sim/run_sim.ps1` (Windows) / `sim/run_sim.sh`; `sim/vivado/` GUI project |
 | `flow/tsmc18/` | RTL Compiler + Innovus scripts, constraints, pin files, `RUN_GUIDE.md`, `results.sh`, `save_results.sh` |
-| `fpga/` | Board top, ROM files, Nexys 4 / 4 DDR pins, `build.tcl` / `program.tcl` (+ `.bat` / `.sh`) |
+| `fpga/` | Board top, ROM files, Nexys 4 / 4 DDR pins, `build.tcl` / `program.tcl` (+ `.bat` / `.sh`), `mic_demo.py` (PC microphone → board) |
 | `results/` | Curated reports (ASIC `int8/`, `int4/`; `fpga/` incl. bitstreams; `python/` accuracy, models, figures) |
 | `docs/` | `SETUP.md`, `progress/` milestone logs, `report/` (final report + screenshots), `slides/`, `reference/` |
 | `alt/sergio_bram_design/` | The other version of the design (on-chip ROMs, Genus/gpdk045 flow), kept intact |
@@ -84,6 +97,7 @@ fpga\program.bat nexys4ddr    :: Nexys 4 DDR / Nexys A7-100T   -> results/fpga/k
 python python/train.py && python python/export_hw.py   # retrain + re-export (needs the dataset)
 cd flow/tsmc18 && rc -f syn_int8.g && innovus -files pnr_int8.tcl   # crosby3 (see RUN_GUIDE.md)
 fpga\program.bat nexys4                            # Windows: load the prebuilt bitstream (or nexys4ddr)
+python fpga\mic_demo.py                            # then speak: the board shows the word
 fpga\build.bat nexys4                              # Windows: rebuild for the original Nexys 4
 ```
 
@@ -95,7 +109,7 @@ fpga\build.bat nexys4                              # Windows: rebuild for the or
 | Model trained on Speech Commands, INT8/INT4 QAT export | ✅ 86.7 % / 85.1 % |
 | RTL + testbench (bit-exact vs Python, every layer, 200 real clips) | ✅ 0 mismatches, INT8 & INT4 |
 | Synthesis + place & route (tsmc18), DRC/connectivity/antenna | ✅ both precisions, timing met at 100 MHz |
-| FPGA demo (switch control, power-on self-test, UART report) | ✅ simulated; ✅ bitstreams for Nexys 4 and Nexys 4 DDR/A7 (50 MHz, timing met); ⏳ board test |
+| FPGA demo (switches, power-on self-test, UART report, PC microphone) | ✅ simulated; ✅ on a Nexys A7-100T: self-test PASS, 200 clips sent from the PC = Python (400/400); ✅ bitstreams (50 MHz, timing met): Nexys 4 DDR/A7 with the microphone input, Nexys 4 switches only (⏳ rebuild) |
 | Final report | ✅ `docs/report/` ; ⏳ slides |
 | Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 
@@ -107,3 +121,4 @@ fpga\build.bat nexys4                              # Windows: rebuild for the or
 | 2026-11-19 | [Testbench upgrade, INT6 export, NumPy training pipeline](docs/progress/2026-11-19-numpy-training-pipeline.md) (now in `alt/`) |
 | 2026-11-19 | [Combined repo: trained model, tsmc18 ASIC results, FPGA demo, report](docs/progress/2026-11-19-combined-design.md) |
 | 2026-11-19 | [FPGA demo: switch control, power-on self-test, UART report, Nexys 4 build](docs/progress/2026-11-19-fpga-switch-selftest.md) |
+| 2026-11-20 | [FPGA demo: words from the PC microphone, no switches needed](docs/progress/2026-11-20-fpga-microphone.md) |

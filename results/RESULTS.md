@@ -62,16 +62,18 @@ for a 1.5-point drop in accuracy (86.7 % → 85.1 %).
 
 Both chips (INT8 and INT4) in one bitstream, weights and the 200 test clips in distributed (LUT) ROMs,
 50 MHz clock from an MMCM. The board runs a power-on self-test (all 200 clips on both precisions) and is
-then driven by the switches; see the README for the controls.
+then driven by the switches, or by words from the PC microphone (`fpga/mic_demo.py` sends each word's
+INT8 and INT4 inputs over the USB-UART); see the README for the controls.
 
-| Metric | Nexys 4 (`nexys4`) | Nexys 4 DDR / A7-100T (`nexys4ddr`) |
+| Metric | Nexys 4 (`nexys4`) | Nexys 4 DDR / A7-100T (`nexys4ddr`, with microphone input) |
 |--------|--------------------|-------------------------------------|
 | Bitstream | `results/fpga/kws_fpga_top_nexys4.bit` | `results/fpga/kws_fpga_top_nexys4ddr.bit` |
-| Slice LUTs | 13,357 of 63,400 (21.1 %) | 13,357 (21.1 %) |
-| Slice registers | 928 (0.7 %) | 928 (0.7 %) |
+| Slice LUTs | 13,357 of 63,400 (21.1 %) | 13,762 (21.7 %), 82 of them LUT RAM |
+| Slice registers | 928 (0.7 %) | 1,431 (1.1 %) |
 | Block RAM / DSP / MMCM | 0 / 0 / 1 | 0 / 0 / 1 |
-| Setup WNS / hold WHS at 50 MHz | +2.653 ns / +0.121 ns | +2.033 ns / +0.083 ns |
+| Setup WNS / hold WHS at 50 MHz | +2.653 ns / +0.121 ns | +1.116 ns / +0.095 ns |
 | One clip | 8,270 cycles = 165 µs | same |
-| Board-level simulation | self-test 176/200 (INT8), 177/200 (INT4), 400/400 same as Python | same RTL |
+| Board-level simulation | self-test 176/200 (INT8), 177/200 (INT4), 400/400 same as Python | same, plus words sent from the PC |
+| On the board (Nexys A7-100T) | | self-test PASS; `fpga/mic_demo.py --clips`: the 200 clips sent from the PC over the UART give INT8 176/200, INT4 177/200, 400/400 same as Python; 12/12 text-to-speech words right |
 
 Reports: `results/fpga/<board>/timing_summary.rpt`, `utilization.rpt`.
