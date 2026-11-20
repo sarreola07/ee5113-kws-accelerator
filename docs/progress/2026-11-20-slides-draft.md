@@ -14,8 +14,18 @@
   - details in `docs/slides/README.md`.
 - **Every number comes from a repo file.** `docs/slides/README.md` lists the source of each one, and the caveats that
   must stay with them (synthesis-only max clock, power estimates, prebuilt FPGA bitstream).
-- **Numbers audit:** still running when this was committed (one checker per slide group, plus a skeptic who tries to
-  refute each finding). Any fixes follow in the next commit.
+- **Numbers audit:**
+  - Five independent checkers traced **291 claims** on the slides, in the notes and in the footers to repo files.
+  - A skeptic per group then tried to refute each finding.
+  - **5 problems were confirmed and fixed:**
+    - the title notes said both versions ran "on an FPGA board"; no board run is recorded, so they now say "built into one
+      FPGA bitstream";
+    - the outline notes said "most of the time" goes to results; it is the biggest part, about 43 % of the script;
+    - slide 12 and its notes credited the earlier version with tests that "run automatically" and "power from simulated
+      activity". It has 15 unit tests run by hand and a one-inference VCD dump.
+    - the conclusion footer now also cites report §4.5 and the 2026-11-20 log.
+  - **12 flags were refuted**, because the repo backs the slide as written: for example the +17.5 % max clock
+    (`results/RESULTS.md`) and the 8 of 8 UART replies (`sim/uart_xcheck.py`).
 - **Placeholders:**
   - the board-test results on slide 11 (FPGA demo) and slide 14 (conclusion);
   - the board photo;

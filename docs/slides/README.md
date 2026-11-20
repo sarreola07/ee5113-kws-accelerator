@@ -13,6 +13,9 @@
   7. conclusion/summary
 - **Colors:** INT8 is blue and INT4 is orange on every slide.
 - **Speaker notes:** every slide has a full script, about 1,400 words in total.
+- **Audit:** all 291 claims on the slides, in the notes and in the footers were traced to repo files. Five wording
+  problems were fixed; see `docs/progress/2026-11-20-slides-draft.md`. Until the board test is logged, say "built
+  into one FPGA bitstream", not "ran on the board".
 
 ## Slides and where every number comes from
 
@@ -29,9 +32,9 @@
 | 9 | Results | Chip Layouts | 79,401 → 46,802 µm² (−41 %); setup slack +0.079 / +0.228 ns at 100 MHz; Innovus DRC, connectivity and antenna checks clean | `results/RESULTS.md`; report Figure 13 |
 | 10 | Results | INT8 vs INT4 | accuracy, chip area, power, energy per word, max clock, setup slack | `results/RESULTS.md` |
 | 11 | Results | FPGA Demo and Board Self-Check | simulation: PASS 176 / PASS 177 / F000 199, UART 8 of 8; prebuilt bitstream 12,891 LUTs (20.3 %), 602 flip-flops, 0 block RAM, +2.796 ns | `results/fpga/nexys4ddr/`, `docs/progress/2026-11-20-design-comparison-board-check.md` |
-| 12 | Results | Design Exploration | the final design vs the earlier version in `alt/` | `docs/progress/2026-11-20-design-comparison-board-check.md` |
+| 12 | Results | Design Exploration | the final design vs the earlier version in `alt/`; worth carrying forward: INT6, its 15 unit tests (run by hand, CI to add), a one-inference VCD for activity-based power, block-RAM-friendly memories | `docs/progress/2026-11-20-design-comparison-board-check.md`, `alt/sergio_bram_design/` |
 | 13 | Conclusion | Summary | −50 % power and energy per word, −41 % chip area, −1.5 accuracy points | `results/RESULTS.md`, `results/python/results.csv` |
-| 14 | Conclusion | Conclusion and Next Steps | delivered vs the proposal, limits, next steps | proposal; report §3.6 |
+| 14 | Conclusion | Conclusion and Next Steps | delivered vs the proposal, limits, next steps | proposal; report §3.6 and §4.5; `docs/progress/2026-11-20-design-comparison-board-check.md` |
 
 Differences on the slides are computed from the repo values; the arithmetic is in the speaker notes:
 - chip area: (79,401 − 46,802) / 79,401 = 41.1 %;
