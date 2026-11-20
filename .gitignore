@@ -50,8 +50,8 @@ vivado_pid*.zip
 !results/**/*.bit
 
 # ---- Python ----
-python/data/
-python/checkpoints/
+**/python/data/
+**/python/checkpoints/
 .venv/
 venv/
 __pycache__/

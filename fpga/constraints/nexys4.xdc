@@ -6,7 +6,7 @@
 set_property -dict { PACKAGE_PIN E3  IOSTANDARD LVCMOS33 } [get_ports { CLK100MHZ }]
 create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports { CLK100MHZ }]
 
-## Switches: SW[7:0] = test clip number, SW15 = INT8 (down) / INT4 (up)
+## Switches: SW[7:0] = test clip number, SW14 = fault test, SW15 = INT8 (down) / INT4 (up)
 set_property -dict { PACKAGE_PIN U9  IOSTANDARD LVCMOS33 } [get_ports { SW[0] }]
 set_property -dict { PACKAGE_PIN U8  IOSTANDARD LVCMOS33 } [get_ports { SW[1] }]
 set_property -dict { PACKAGE_PIN R7  IOSTANDARD LVCMOS33 } [get_ports { SW[2] }]
@@ -16,6 +16,7 @@ set_property -dict { PACKAGE_PIN V7  IOSTANDARD LVCMOS33 } [get_ports { SW[5] }]
 set_property -dict { PACKAGE_PIN V6  IOSTANDARD LVCMOS33 } [get_ports { SW[6] }]
 set_property -dict { PACKAGE_PIN V5  IOSTANDARD LVCMOS33 } [get_ports { SW[7] }]
 set_property -dict { PACKAGE_PIN P4  IOSTANDARD LVCMOS33 } [get_ports { SW15 }]
+set_property -dict { PACKAGE_PIN P3  IOSTANDARD LVCMOS33 } [get_ports { SW14 }]   ;# fault test (self-check must FAIL)
 
 ## LEDs
 set_property -dict { PACKAGE_PIN T8  IOSTANDARD LVCMOS33 } [get_ports { LED[0] }]
@@ -34,6 +35,11 @@ set_property -dict { PACKAGE_PIN P5  IOSTANDARD LVCMOS33 } [get_ports { LED[12] 
 set_property -dict { PACKAGE_PIN U1  IOSTANDARD LVCMOS33 } [get_ports { LED[13] }]
 set_property -dict { PACKAGE_PIN R2  IOSTANDARD LVCMOS33 } [get_ports { LED[14] }]
 set_property -dict { PACKAGE_PIN P2  IOSTANDARD LVCMOS33 } [get_ports { LED[15] }]
+
+## RGB LED16: self-check result (green PASS, red FAIL/Err, blue running)
+set_property -dict { PACKAGE_PIN K5  IOSTANDARD LVCMOS33 } [get_ports { LED16_R }]
+set_property -dict { PACKAGE_PIN F13 IOSTANDARD LVCMOS33 } [get_ports { LED16_G }]
+set_property -dict { PACKAGE_PIN F6  IOSTANDARD LVCMOS33 } [get_ports { LED16_B }]
 
 ## 7-segment display (segments and anodes are active low)
 set_property -dict { PACKAGE_PIN L3  IOSTANDARD LVCMOS33 } [get_ports { CA }]
@@ -58,8 +64,13 @@ set_property -dict { PACKAGE_PIN C12 IOSTANDARD LVCMOS33 } [get_ports { CPU_RESE
 set_property -dict { PACKAGE_PIN E16 IOSTANDARD LVCMOS33 } [get_ports { BTNC }]
 set_property -dict { PACKAGE_PIN F15 IOSTANDARD LVCMOS33 } [get_ports { BTNU }]
 
+## USB-UART (same micro-USB cable as programming): live words from fpga/kws_live.py
+set_property -dict { PACKAGE_PIN C4  IOSTANDARD LVCMOS33 } [get_ports { UART_RX }]   ;# PC -> FPGA
+set_property -dict { PACKAGE_PIN D4  IOSTANDARD LVCMOS33 } [get_ports { UART_TX }]   ;# FPGA -> PC
+
 ## Asynchronous inputs (switches, buttons) do not need timing
-set_false_path -from [get_ports { SW[*] SW15 BTNC BTNU CPU_RESETN }]
+set_false_path -from [get_ports { SW[*] SW14 SW15 BTNC BTNU CPU_RESETN UART_RX }]
+set_false_path -to   [get_ports { UART_TX }]
 
 ## Configuration
 set_property CFGBVS VCCO [current_design]

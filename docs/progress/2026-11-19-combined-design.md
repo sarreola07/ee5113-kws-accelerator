@@ -91,7 +91,7 @@ python fpga/gen_fpga_mem.py
 
 ## Next steps
 - [ ] Test `results/fpga/kws_fpga_top_nexys4ddr.bit` on the real board (BTNU should show `176  200` / `177  200`).
-- [ ] Original Nexys 4 (no DDR): run `fpgauild.bat nexys4` once (~25 min) and commit `results/fpga/`.
+- [ ] Original Nexys 4 (no DDR): run `fpga\build.bat nexys4` once (~25 min) and commit `results/fpga/`.
 - [ ] Slides (`docs/slides/`).
 - [ ] Optional: INT6 with the main design; block-RAM ROMs (from `alt/`) to run the FPGA at 100 MHz;
       gpdk045 run to match the proposal's 45 nm plan.

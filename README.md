@@ -51,7 +51,7 @@ Details: [`results/RESULTS.md`](results/RESULTS.md). Reports: `results/int8/`, `
 | `rtl/` | `kws_accel.v` (core), `kws_top.v` (`kws_int8`, `kws_int4` chip tops) |
 | `tb/`, `sim/` | Self-checking testbenches; `sim/run_sim.ps1` (Windows) / `sim/run_sim.sh`; `sim/vivado/` GUI project |
 | `flow/tsmc18/` | RTL Compiler + Innovus scripts, constraints, pin files, `RUN_GUIDE.md`, `results.sh`, `save_results.sh` |
-| `fpga/` | Board top, ROM files, Nexys 4 / 4 DDR pins, `build.tcl` / `program.tcl` (+ `.bat` / `.sh`) |
+| `fpga/` | Board top with bit-exact self-check, ROM files, UART link (`uart.v`, `kws_uart_link.v`), `kws_live.py` (live words / self-test from a PC), Nexys 4 / 4 DDR pins, `build.tcl` / `program.tcl` (+ `.bat` / `.sh`) |
 | `results/` | Curated reports (ASIC `int8/`, `int4/`; `fpga/` incl. bitstreams; `python/` accuracy, models, figures) |
 | `docs/` | `SETUP.md`, `progress/` milestone logs, `report/` (final report + screenshots), `slides/`, `reference/` |
 | `alt/sergio_bram_design/` | The other version of the design (on-chip ROMs, Genus/gpdk045 flow), kept intact |
@@ -63,10 +63,13 @@ Details: [`results/RESULTS.md`](results/RESULTS.md). Reports: `results/int8/`, `
 .\sim\run_sim.ps1 int8                             # Windows + Vivado: RTL vs Python → TEST PASSED (also int4)
 ./sim/run_sim.sh int8                              # Linux/crosby3 (xsim, Xcelium or Icarus)
 ./sim/run_sim.sh fpga                              # board-level test of the FPGA top
-python python/train.py && python python/export_hw.py   # retrain + re-export (needs the dataset)
+python python/train.py && python python/export_hw.py && python fpga/gen_fpga_mem.py && python python/export_frontend.py   # retrain + re-export everything (needs the dataset)
 cd flow/tsmc18 && rc -f syn_int8.g && innovus -files pnr_int8.tcl   # crosby3 (see RUN_GUIDE.md)
-fpga\program.bat nexys4ddr                         # Windows: load the prebuilt bitstream on the board
-fpga\build.bat nexys4                              # Windows: rebuild for the original Nexys 4
+fpga\build.bat nexys4ddr program                   # Windows: build (~25 min) and load it (nexys4ddr | nexys4 | nexys_a7_50t)
+fpga\program.bat nexys4ddr                         # Windows: load the last good build again
+python fpga/kws_live.py --selftest                 # board == Python over the USB-UART (200 clips, INT8 + INT4)
+python fpga/kws_live.py --mic                      # live words: say yes/no/on/off/left/right
+python sim/uart_xcheck.py                          # no board: kws_live.py packets through the Verilog design (Icarus)
 ```
 
 ## Status
@@ -77,8 +80,10 @@ fpga\build.bat nexys4                              # Windows: rebuild for the or
 | Model trained on Speech Commands, INT8/INT4 QAT export | ✅ 86.7 % / 85.1 % |
 | RTL + testbench (bit-exact vs Python, every layer, 200 real clips) | ✅ 0 mismatches, INT8 & INT4 |
 | Synthesis + place & route (tsmc18), DRC/connectivity/antenna | ✅ both precisions, timing met at 100 MHz |
-| FPGA demo (both precisions, 200 clips, run-all check) | ✅ simulated; ✅ Nexys 4 DDR/A7 bitstream built (50 MHz, WNS +2.8 ns); ⏳ test on the board, ⏳ nexys4 build |
-| Final report | ✅ `docs/report/` ; ⏳ slides |
+| FPGA demo (both precisions, 200 clips) | ✅ simulated; ✅ Nexys 4 DDR/A7 bitstream built (50 MHz, WNS +2.8 ns), before the self-check below |
+| FPGA bit-exact self-check (PASS / FAIL / Err, SW14 fault test) | ✅ simulated; ⏳ rebuild from `sergio/board-check-live-voice` and test on the board |
+| Live words from a microphone (USB-UART + `fpga/kws_live.py`) | ✅ simulated, cross-checked with Python; ⏳ on the board |
+| Final report and slides | ✅ `docs/report/` ; 🟡 slides: 14-slide mock in the course's order, board results still placeholders (`docs/slides/`) |
 | Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 
 ## Progress log
@@ -88,3 +93,5 @@ fpga\build.bat nexys4                              # Windows: rebuild for the or
 | 2026-11-18 | [Repository and environment set up](docs/progress/2026-11-18-repo-setup.md) |
 | 2026-11-19 | [Testbench upgrade, INT6 export, NumPy training pipeline](docs/progress/2026-11-19-numpy-training-pipeline.md) (now in `alt/`) |
 | 2026-11-19 | [Combined repo: trained model, tsmc18 ASIC results, FPGA demo, report](docs/progress/2026-11-19-combined-design.md) |
+| 2026-11-20 | [Design comparison, review notes, board self-check, live words](docs/progress/2026-11-20-design-comparison-board-check.md) |
+| 2026-11-20 | [Presentation deck: mock with placeholders, sources of every number](docs/progress/2026-11-20-slides-draft.md) |

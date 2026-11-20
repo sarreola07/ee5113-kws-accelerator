@@ -55,7 +55,12 @@ module kws_accel #(
     // result
     output reg                  busy,       // high while an inference runs
     output reg                  done,       // 1-cycle pulse: class_out is new
-    output reg  [CLASS_W-1:0]   class_out   // 0=yes 1=no 2=on 3=off 4=left 5=right
+    output reg  [CLASS_W-1:0]   class_out,  // 0=yes 1=no 2=on 3=off 4=left 5=right
+    // observation ports (read-only copies of internal signals) for the FPGA
+    // self-check; the ASIC tops in kws_top.v leave them unconnected
+    output wire                 dbg_out_wr,  // 1 cycle: dbg_acc is output score dbg_out_idx
+    output wire [NEU_W-1:0]     dbg_out_idx,
+    output wire [ACC_W-1:0]     dbg_acc
 );
 
     localparam [BW-1:0] QMAX = (1 << (BW - 1)) - 1;    // 127 (INT8) or 7 (INT4)
@@ -101,6 +106,10 @@ module kws_accel #(
     // Debug strobes (also used by the testbench to check each layer)
     wire hid_wr = (state == S_POST) && !layer;   // hidden value h_new is ready
     wire out_wr = (state == S_POST) &&  layer;   // output score acc is ready
+
+    assign dbg_out_wr  = out_wr;
+    assign dbg_out_idx = neu_cnt;
+    assign dbg_acc     = acc;
 
     //------------------------------------------------------------- FSM
     always @(posedge clk or negedge rst_n) begin
