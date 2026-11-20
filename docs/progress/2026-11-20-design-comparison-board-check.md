@@ -67,31 +67,73 @@ All numbers are quoted from files in the repo.
    - SW14 is a fault test: it corrupts clip 0, so the board must fail there.
    - RGB LED16: green, red or blue.
    - A result is cleared when SW15 moves.
-   - `build.tcl` refuses a bitstream that fails setup or hold timing.
+   - `build.tcl` refuses a bitstream that fails setup or hold timing: nothing is copied to `results/fpga`, and
+     `build.bat <board> program` does not load the board.
    - `gen_fpga_mem.py --check` reports when `fpga/mem` is out of date.
 3. **Live words over the USB-UART** (`fpga, python:` commit):
    - `fpga/uart.v` and `fpga/kws_uart_link.v` (115200 baud, packet protocol in the file header);
    - `fpga/kws_live.py` with `--selftest`, `--mic`, `--wav` and `--mock`;
    - `python/export_frontend.py` writes `weights/frontend.npz`, the training mean/std and input scales. They existed only in
      the git-ignored `features.npz` before.
+4. **Review fixes and a UART cross-check** (`fpga, python, docs:` commit): see the next section.
+   `sim/uart_xcheck.py` + `tb/tb_uart_xcheck.v` run the packets `kws_live.py` makes through the Verilog board design.
+
+## Review before the PR
+The whole branch was reviewed for bugs (RTL, Python, docs), and a second pass tried to disprove each finding before it
+was accepted. These were confirmed, and all are fixed in the last commit:
+
+| Where | Problem | Fix |
+|---|---|---|
+| `fpga/build.bat` | No error check after Vivado, so `build.bat <board> program` loaded the **old** bitstream after a failed build | Stops with "Build FAILED - the board was NOT programmed" |
+| `fpga/build.tcl` | The reports were written to `results/fpga/` before the timing check, so a failed build left reports that don't belong to the committed bitstream; the message always said "50 MHz" | Reports go to `fpga/work/<board>/` and are copied together with the bitstream only when timing is met |
+| `fpga/kws_fpga_top.v`, `tb/tb_fpga_top.v` | A register (`last_cls`) and test arrays were used before their declaration. Icarus accepted it, but the Verilog standard doesn't allow it, and a strict parser (slang) rejected it with 3 errors | Declared before use; slang: 0 errors |
+| same | The score widths 23 and 15 were typed in several places | `ACC8` / `ACC4` localparams (CLAUDE.md rule updated) |
+| `fpga/kws_uart_link.v` | A reply that became ready while the previous one was still going out was dropped | A one-entry pending slot; the new test 7e (two pings back to back) fails on the old code and passes now |
+| `python/live_frontend.py`, `fpga/kws_live.py` | `frontend.npz` was checked against only 7 of the 9 MFCC settings, and not against the words or the model's input scale `s_x` | All 9 settings, the words and `s_x` are checked; a stale file stops the script and says what to run |
+| docs | The `Err` text claimed it catches any missing `.mem` file; the retrain commands skipped `gen_fpga_mem.py` and `export_frontend.py`; README pointed at the old prebuilt bitstream; the Python ↔ Verilog cross-check had no committed command | Reworded (what `Err`, `F000   0` and a stale `fpga/mem` look like), commands fixed, `sim/uart_xcheck.py` added |
 
 ## Verification done in the cloud session (Icarus Verilog + Python)
-| Check | Result |
-|---|---|
-| `tb_kws` INT8 / INT4 after adding the observation ports | 6,400 hidden values, 1,200 scores, 200 classes each: 0 mismatches |
-| `tb_fpga_top`, BTNC clip 2 | `  2 LEFt`, class 4 = Python, all 6 scores equal |
-| `tb_fpga_top`, BTNU INT8 / INT4 | `PASS 176` / `PASS 177` |
-| `tb_fpga_top`, SW15 flipped | result cleared |
-| `tb_fpga_top`, SW14 fault test | `F000 199` |
-| `tb_fpga_top`, damaged checksum | `Err ----` |
-| `tb_fpga_top`, UART live packets (INT8 clips 2, 77; INT4 clips 2, 199) | class and all 6 scores = Python, 8,271 cycles |
-| `tb_fpga_top`, UART bad checksum / ping / half packet | status 1 and no run / status 2 / dropped, next packet OK |
-| Python packets → Verilog board → Python decoder (5 test clips + 1 real .wav at INT8 and INT4) | 7/7 identical to the Python model |
-| `python python/export_frontend.py --verify` (live front end on the 200 test .wav files) | 50,000/50,000 inputs identical to `test_inputs.mem`, INT8 and INT4 |
-| `python fpga/kws_live.py --mock --selftest` | 200/200 clips identical; 176/200 (INT8) and 177/200 (INT4) words correct |
+All on the cloud Linux session, after the review fixes. The `./sim/run_sim.sh` commands also run on crosby3 (xsim or
+Xcelium, drop `iverilog`) and on Windows (`.\sim\run_sim.ps1 <target>`).
 
-The dataset was streamed in this session with `python/prepare_data.py`: 18,470 / 2,254 / 2,430 clips, the same
+| Check | Command | Result |
+|---|---|---|
+| RTL vs Python, every layer, after adding the observation ports | `./sim/run_sim.sh int8 iverilog`, then `int4` | 0 mismatches: 6,400 hidden values, 1,200 scores, 200 classes each |
+| Board top: BTNC clip 2 | `./sim/run_sim.sh fpga iverilog` (about 60 s; every `tb_fpga_top` row is this one run) | `  2 LEFt`, class 4 = Python, all 6 scores equal |
+| Board top: BTNU INT8 / INT4 | (same run) | `PASS 176` / `PASS 177` |
+| Board top: SW15 flipped | (same run) | result cleared |
+| Board top: SW14 fault test | (same run) | `F000 199` |
+| Board top: damaged checksum | (same run) | `Err ----` |
+| UART live packets (INT8 clips 2, 77; INT4 clips 2, 199) | (same run) | class and all 6 scores = Python, 8,271 cycles |
+| UART bad checksum / ping / half packet | (same run) | status 1 and no run / status 2 / dropped, next packet OK |
+| UART two pings back to back (test 7e) | (same run) | two pongs; with the old `kws_uart_link.v` the second never comes |
+| `kws_live.py` packets → Verilog board → `kws_live.py` decoder | `python sim/uart_xcheck.py --wav python/data/speech_commands/left/00176480_nohash_0.wav` | 8/8 replies = Python (test clips 2, 77, 199 and the .wav, INT8 and INT4) |
+| Live front end on the 200 test .wav files | `python python/export_frontend.py --verify` (needs the dataset) | 50,000/50,000 inputs identical to `test_inputs.mem`, INT8 and INT4 |
+| `kws_live.py` with a software board | `python fpga/kws_live.py --mock --selftest` | 200/200 clips identical; 176/200 (INT8) and 177/200 (INT4) words correct |
+| `fpga/mem` up to date | `python fpga/gen_fpga_mem.py --check` | `fpga/mem matches weights/` |
+| Strict parse of the board design and both testbenches | slang (`pip install pyslang`), not committed | 0 errors (the previous commit: 3) |
+| `build.tcl` timing gate | `tclsh` with stub Vivado commands, not committed | timing met: bitstream and reports copied; setup or hold failure: nothing copied, exit 1 |
+
+The dataset was streamed in this session with `python python/prepare_data.py`: 18,470 / 2,254 / 2,430 clips, the same
 counts as `results/python/logs/prepare_data.txt`.
+
+## Files added or changed
+| File | What | Used by |
+|---|---|---|
+| `rtl/kws_accel.v` | read-only `dbg_*` output ports, no logic change | simulation, FPGA; the ASIC tops leave them open |
+| `rtl/kws_top.v` | `dbg_*` ports left unconnected | tsmc18 flow on crosby3 |
+| `fpga/kws_fpga_core.v`, `fpga/kws_fpga_top.v` | score compare, checksums, verdict display, RGB LED16, SW14, live-input RAM and mux | Vivado (`fpga/build.tcl`), `sim/run_sim.* fpga` |
+| `fpga/uart.v`, `fpga/kws_uart_link.v` | 115200 8N1 UART and the packet protocol (file header) | same |
+| `fpga/gen_fpga_mem.py` → `fpga/mem/*.mem` | adds `<p>_logits8.mem` and `<p>_check.mem`; `--check` | Vivado and the simulations load them by name |
+| `fpga/constraints/nexys4.xdc`, `nexys4ddr.xdc` | SW14, RGB LED16, UART pins | Vivado |
+| `fpga/build.tcl`, `fpga/build.bat` | timing gate; results only with a good build; no programming after a failure | Windows PC with Vivado |
+| `fpga/kws_live.py`, `fpga/requirements-live.txt` | PC side: `--selftest`, `--mic`, `--wav`, `--mock` | the PC the board is plugged into |
+| `python/live_frontend.py`, `python/export_frontend.py` → `weights/frontend.npz` | live audio → hardware inputs, exactly like training | read by `kws_live.py` |
+| `tb/tb_fpga_top.v` | board-level test, scenarios 1 to 7e | `sim/run_sim.* fpga` |
+| `tb/tb_uart_xcheck.v`, `sim/uart_xcheck.py` | `kws_live.py` against the Verilog design | Linux, crosby3 or macOS with Icarus Verilog |
+| `sim/run_sim.sh`, `sim/run_sim.ps1` | the UART files added to the fpga target | Linux / Windows |
+| `docs/SETUP.md`, `README.md`, `CLAUDE.md`, this log | steps, commands, rules | both partners |
+| all `*.sh`, `.gitignore`, `docs/progress/2026-11-19-combined-design.md`, `alt/sergio_bram_design/README.md` | repo fixes (`repo:` commit) | |
 
 ## How to test on the board (Windows PC + Vivado + Nexys)
 The committed bitstream in `results/fpga/` is from **before** this branch, so it must be rebuilt.
@@ -99,10 +141,11 @@ The committed bitstream in `results/fpga/` is from **before** this branch, so it
 ```bat
 git fetch
 git switch sergio/board-check-live-voice
-fpga\build.bat nexys4 program
+fpga\build.bat <board> program
 ```
-- Use `nexys4ddr` instead of `nexys4` if the board label says DDR or A7.
-- The build takes about 25 minutes, and stops with an error if timing fails.
+- `<board>`: `nexys4` (plain Nexys 4), `nexys4ddr` (Nexys 4 DDR or Nexys A7-100T) or `nexys_a7_50t` (Nexys A7-50T).
+- The build takes about 25 minutes. If timing fails, it stops with an error, copies nothing to `results/fpga` and
+  does not program the board.
 
 | Step | Expected |
 |---|---|
@@ -118,8 +161,9 @@ take the PR out of draft.
 ## Not verified yet (needs the board)
 - **The Vivado build and timing.**
   - The live-input multiplexer adds a level to the 50 MHz critical path (old WNS +2.796 ns).
-  - If timing fails, lower the MMCM to 40 MHz: `CLKOUT0_DIVIDE_F` 25.0 in `fpga/kws_fpga_top.v`, and
-    `UART_CLKS_PER_BIT` 347.
+  - If **setup** timing fails (WNS < 0), lower the MMCM to 40 MHz: `CLKOUT0_DIVIDE_F` 25.0 in `fpga/kws_fpga_top.v`
+    (VCO 1000 MHz / 25), and `UART_CLKS_PER_BIT` 347 (40 MHz / 115200). A slower clock does not fix a **hold**
+    failure (WHS < 0); for that, look at the failing paths in `fpga/work/<board>/timing_summary.rpt`.
 - The board's displays and LEDs, and the UART on real hardware.
 - **Live microphone accuracy.** Expect it to be lower than the 86.7 % test accuracy, because the microphone, the room and
   the word's position in the 1-second window all differ from the dataset. No number until it is measured.

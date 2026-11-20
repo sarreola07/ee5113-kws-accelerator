@@ -103,6 +103,8 @@ module kws_fpga_top #(
     wire [7:0] clip_sel = (sw_s2 > 8'd199) ? 8'd199 : sw_s2;
 
     //------------------------------------------------------- the two chips
+    // Accumulator (score) widths: keep equal to KWS_ACC_W in weights/int8 and int4/kws_params.vh
+    localparam ACC8 = 23, ACC4 = 15;
     reg  [7:0] clip_r;
     reg        prec_r;                       // 0 = INT8, 1 = INT4
     reg        fault_r;                      // SW14 when the run started
@@ -112,13 +114,23 @@ module kws_fpga_top #(
 
     wire        busy8, done8, busy4, done4, lok8, lok4, swr8, swr4;
     wire [2:0]  cls8, exp8, lab8, cls4, exp4, lab4;
-    wire [22:0] sg8;
-    wire [14:0] sg4;
+    wire [ACC8-1:0] sg8;
+    wire [ACC4-1:0] sg4;
     wire [63:0] chk8, chk4;
     wire [7:0]  xa8, xa4;
     wire [2:0]  sidx8, sidx4;
-    wire [22:0] sv8;
-    wire [14:0] sv4;
+    wire [ACC8-1:0] sv8;
+    wire [ACC4-1:0] sv4;
+
+    //------------------------------------------------------- controller state
+    reg        all_mode;
+    reg [7:0]  n_correct, n_match;
+    reg [2:0]  last_cls, last_lab;
+    reg        last_ok, last_match;
+    reg [1:0]  show;                         // 0 idle, 1 one clip, 2 all clips, 3 live word
+    reg        ff_valid;                     // a failing clip was seen
+    reg [7:0]  first_fail;
+    reg [15:0] sum_exp, sum_lab, sum_sg;     // checksums of the golden data that was read
 
     //------------------------------------------------------- live input (UART)
     wire        ram_we, link_req, link_prec;
@@ -138,7 +150,7 @@ module kws_fpga_top #(
         .req(link_req), .req_prec(link_prec), .ack(link_ack),
         .res_valid(res_valid), .res_class(last_cls), .res_scores(scores), .res_cycles(cycles));
 
-    kws_fpga_core #(.BW(8), .ACC_W(23), .SHIFT(9),
+    kws_fpga_core #(.BW(8), .ACC_W(ACC8), .SHIFT(9),
         .X_FILE("int8_inputs256.mem"), .W_FILE("int8_weights.mem"), .B_FILE("int8_biases.mem"),
         .E_FILE("int8_expected.mem"),  .L_FILE("int8_labels.mem"),
         .G_FILE("int8_logits8.mem"),   .K_FILE("int8_check.mem")) u_int8 (
@@ -148,7 +160,7 @@ module kws_fpga_top #(
         .logits_ok(lok8), .score_wr(swr8), .score_idx(sidx8), .score_val(sv8),
         .score_gold(sg8), .check(chk8));
 
-    kws_fpga_core #(.BW(4), .ACC_W(15), .SHIFT(5),
+    kws_fpga_core #(.BW(4), .ACC_W(ACC4), .SHIFT(5),
         .X_FILE("int4_inputs256.mem"), .W_FILE("int4_weights.mem"), .B_FILE("int4_biases.mem"),
         .E_FILE("int4_expected.mem"),  .L_FILE("int4_labels.mem"),
         .G_FILE("int4_logits8.mem"),   .K_FILE("int4_check.mem")) u_int4 (
@@ -164,22 +176,13 @@ module kws_fpga_top #(
     wire [2:0]  lab_s  = prec_r ? lab4  : lab8;
     wire        lok_s  = prec_r ? lok4  : lok8;
     wire        swr_s  = prec_r ? swr4  : swr8;
-    wire [22:0] sg_s   = prec_r ? {8'd0, sg4} : sg8;
+    wire [ACC8-1:0] sg_s = prec_r ? {{(ACC8-ACC4){1'b0}}, sg4} : sg8;
     wire [63:0] chk_s  = prec_r ? chk4  : chk8;
     wire [2:0]  sidx_s = prec_r ? sidx4 : sidx8;
-    wire [22:0] sv_s   = prec_r ? {{8{sv4[14]}}, sv4} : sv8;   // sign-extend INT4 scores
+    wire [ACC8-1:0] sv_s = prec_r ? {{(ACC8-ACC4){sv4[ACC4-1]}}, sv4} : sv8;   // sign-extend INT4 scores
     wire        match_now = (cls_s == exp_s) && lok_s;   // class AND all 6 scores equal Python
 
     //------------------------------------------------------- controller
-    reg        all_mode;
-    reg [7:0]  n_correct, n_match;
-    reg [2:0]  last_cls, last_lab;
-    reg        last_ok, last_match;
-    reg [1:0]  show;                         // 0 idle, 1 one clip, 2 all clips
-    reg        ff_valid;                     // a failing clip was seen
-    reg [7:0]  first_fail;
-    reg [15:0] sum_exp, sum_lab, sum_sg;     // checksums of the golden data that was read
-    // show: 0 idle, 1 one clip, 2 all clips, 3 live word from the PC
 
     always @(posedge clk) begin
         if (!rst_n) begin
@@ -225,7 +228,7 @@ module kws_fpga_top #(
             C_WAIT: begin
                 cycles <= cycles + 1'b1;
                 if (swr_s && !live_r) sum_sg <= sum_sg + sg_s[15:0];
-                if (swr_s && live_r)  scores[sidx_s*32 +: 32] <= {{9{sv_s[22]}}, sv_s};
+                if (swr_s && live_r)  scores[sidx_s*32 +: 32] <= {{(32-ACC8){sv_s[ACC8-1]}}, sv_s};
                 if (done_s && live_r) begin              // live word: report it to the PC
                     last_cls   <= cls_s;
                     last_lab   <= 3'd0;

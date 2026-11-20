@@ -63,12 +63,13 @@ Details: [`results/RESULTS.md`](results/RESULTS.md). Reports: `results/int8/`, `
 .\sim\run_sim.ps1 int8                             # Windows + Vivado: RTL vs Python → TEST PASSED (also int4)
 ./sim/run_sim.sh int8                              # Linux/crosby3 (xsim, Xcelium or Icarus)
 ./sim/run_sim.sh fpga                              # board-level test of the FPGA top
-python python/train.py && python python/export_hw.py   # retrain + re-export (needs the dataset)
+python python/train.py && python python/export_hw.py && python fpga/gen_fpga_mem.py && python python/export_frontend.py   # retrain + re-export everything (needs the dataset)
 cd flow/tsmc18 && rc -f syn_int8.g && innovus -files pnr_int8.tcl   # crosby3 (see RUN_GUIDE.md)
-fpga\program.bat nexys4ddr                         # Windows: load the prebuilt bitstream on the board
-fpga\build.bat nexys4                              # Windows: rebuild for the original Nexys 4
+fpga\build.bat nexys4ddr program                   # Windows: build (~25 min) and load it (nexys4ddr | nexys4 | nexys_a7_50t)
+fpga\program.bat nexys4ddr                         # Windows: load the last good build again
 python fpga/kws_live.py --selftest                 # board == Python over the USB-UART (200 clips, INT8 + INT4)
 python fpga/kws_live.py --mic                      # live words: say yes/no/on/off/left/right
+python sim/uart_xcheck.py                          # no board: kws_live.py packets through the Verilog design (Icarus)
 ```
 
 ## Status

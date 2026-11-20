@@ -9,4 +9,5 @@ set BOARD=%1
 if "%BOARD%"=="" set BOARD=nexys4ddr
 if not exist fpga\work mkdir fpga\work
 call vivado -mode batch -nojournal -log fpga\work\vivado_build.log -source fpga\build.tcl -tclargs %BOARD%
+if errorlevel 1 (echo Build FAILED - the board was NOT programmed. See fpga\work\vivado_build.log & exit /b 1)
 if /I "%2"=="program" call fpga\program.bat %BOARD%

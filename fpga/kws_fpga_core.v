@@ -11,9 +11,11 @@
 // Self-check: every output score the core produces (dbg_out_wr / dbg_acc) is
 // compared with the score Python computed for that clip (G_FILE). logits_ok
 // stays 1 only if all 6 scores of the run were equal. K_FILE holds a magic
-// word and checksums so the top can tell a missing .mem file from a real
-// mismatch. 'fault' flips the lowest bit of every input of clip 0, so the
-// board must report a FAIL at clip 0 (proves the checker is not stuck on PASS).
+// word and checksums of the golden data (E_FILE, L_FILE, G_FILE), so the top
+// shows Err, not a false PASS, if one of those files was missing (Vivado fills
+// the ROM with zeros). A missing X/W/B file makes every clip differ instead.
+// 'fault' flips the lowest bit of every input of clip 0, so the board must
+// report a FAIL at clip 0 (proves the checker is not stuck on PASS).
 // use_ext / ext_x: the inputs come from the live-input RAM in the top instead
 // (250 values sent by fpga/kws_live.py over the UART).
 //============================================================================

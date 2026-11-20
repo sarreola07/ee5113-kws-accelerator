@@ -15,8 +15,11 @@ both sets in one project:
                     8 per clip (address {clip, score}); the board compares every score
   <p>_check.mem     4 x 16-bit words: magic 4B57, then the sums (mod 2^16) of the
                     expected classes, the labels and the raw score words. The board
-                    recomputes them during run-all, so a missing or damaged .mem file
-                    shows "Err" instead of a false PASS.
+                    recomputes them during run-all, so a missing or damaged golden-data
+                    file (expected, labels, logits8, check) shows "Err" instead of a
+                    false PASS. A missing weights, biases or inputs file makes every clip
+                    fail instead (typically "F000   0"). --check finds an fpga/mem that is
+                    older than weights/ (the board would still pass, against old data).
 """
 import sys
 from pathlib import Path

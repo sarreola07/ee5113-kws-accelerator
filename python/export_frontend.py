@@ -26,8 +26,7 @@ def export():
         sys.exit(f"missing {C.FEATURES_FILE}: run python python/prepare_data.py first")
     d = np.load(C.FEATURES_FILE)
     s_x = [float(np.load(C.RESULTS_DIR / f"qmodel_int{b}.npz")["s_x"]) for b in C.BIT_WIDTHS]
-    cfg = {k.lower(): getattr(C, k) for k in ("SAMPLE_RATE", "CLIP_SAMPLES", "FRAME_LEN", "FRAME_HOP",
-                                              "N_FFT", "N_MELS", "N_MFCC", "F_MIN", "F_MAX")}
+    cfg = {k.lower(): getattr(C, k) for k in F.CFG_KEYS}
     np.savez(F.FRONTEND_FILE, mean=d["mean"], std=d["std"], words=np.array(C.WORDS),
              bits=np.array(C.BIT_WIDTHS), s_x=np.array(s_x), cfg=json.dumps(cfg, sort_keys=True))
     print(f"Saved {F.FRONTEND_FILE}  (s_x: " + ", ".join(f"INT{b} {s:.6f}" for b, s in zip(C.BIT_WIDTHS, s_x)) + ")")

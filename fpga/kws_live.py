@@ -13,7 +13,8 @@ Options:
     --save DIR       keep every --mic recording as a .wav file in DIR
 
 Install once:  pip install -r fpga/requirements-live.txt
-The board must run a bitstream built from this branch (fpga\\build.bat <board> program).
+The board must run a bitstream with the UART link, i.e. built from the 2026-11-20 sources
+or later (fpga\\build.bat <board> program); the older prebuilt bitstream has no UART.
 Live audio goes through the same MFCC, normalization and quantization as the training
 data (python/live_frontend.py + weights/frontend.npz); for every live word the script also
 runs the Python integer model on the same inputs and says whether the board agrees.
@@ -128,8 +129,9 @@ def find_board(port=None):
             pass
         b.close()
     sys.exit("No board answered. Check that the board is on, the micro-USB cable is in the PROG/UART\n"
-             "port, the bitstream from this branch is programmed (fpga\\build.bat <board> program),\n"
-             "and no other program (serial terminal) has the port open. Ports tried: "
+             "port, a bitstream with the UART link is programmed (built from the 2026-11-20 sources or\n"
+             "later: fpga\\build.bat <board> program), and no other program (serial terminal) has the\n"
+             "port open. Ports tried: "
              + (", ".join(ports) or "none"))
 
 
@@ -242,6 +244,11 @@ def main():
         bits = int(a.prec[3:]) if a.prec else 8
         fe = F.load()
         models = {b: Q.load_int_model(C.RESULTS_DIR / f"qmodel_int{b}.npz")[0] for b in C.BIT_WIDTHS}
+        for b in C.BIT_WIDTHS:                   # frontend.npz must belong to the current model
+            if fe["s_x"][b] != models[b]["s_x"]:
+                sys.exit(f"weights/frontend.npz has s_x {fe['s_x'][b]} for INT{b}, but "
+                         f"results/python/qmodel_int{b}.npz has {models[b]['s_x']}: the model was\n"
+                         "retrained after the front end was exported. Run python python/export_frontend.py")
         if a.save:
             Path(a.save).mkdir(parents=True, exist_ok=True)
         if a.wav:

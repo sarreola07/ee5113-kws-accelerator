@@ -17,6 +17,10 @@
 // The input bytes go straight into the live-input RAM (ram_*); 'req' asks the
 // controller to run them and stays high until 'ack'. A packet that stops in
 // the middle is dropped after TIMEOUT clocks without a byte.
+// One request at a time: the PC waits for the reply before it sends the next
+// packet (fpga/kws_live.py does). Bytes that arrive while an inference is
+// waiting to run are ignored. A reply that becomes ready while the previous
+// one is still going out waits in a one-entry slot ('pend').
 //============================================================================
 `timescale 1ns/1ps
 
@@ -58,26 +62,27 @@ module kws_uart_link #(
     reg [7:0]  sum, n;
     reg [21:0] idle;                         // clocks since the last byte
 
-    // reply to send: 0 = none, 1 = result, 2 = bad packet, 3 = pong
-    reg [1:0]  reply;
-    reg        reply_go;
+    // reply waiting for the transmitter: 0 = none, 1 = result, 2 = bad packet, 3 = pong
+    reg [1:0]  pend;
+    reg        sending;                      // a reply is going out
+    wire       take = (pend != 2'd0) && !sending;   // the transmitter takes 'pend' this cycle
 
     always @(posedge clk) begin
         if (!rst_n) begin
             rs <= R_SYNC; sum <= 8'd0; n <= 8'd0; idle <= 22'd0;
             ram_we <= 1'b0; ram_addr <= 8'd0; ram_data <= 8'd0;
-            req <= 1'b0; req_prec <= 1'b0; reply <= 2'd0; reply_go <= 1'b0;
+            req <= 1'b0; req_prec <= 1'b0; pend <= 2'd0;
         end else begin
-            ram_we   <= 1'b0;
-            reply_go <= 1'b0;
+            ram_we <= 1'b0;
+            if (take) pend <= 2'd0;          // a new reply set below in the same cycle wins
             if (ack) req <= 1'b0;
             if (rx_valid) idle <= 22'd0;
             else if (idle != 22'h3FFFFF) idle <= idle + 1'b1;
 
             if (rs != R_SYNC && rs != R_WAIT && idle >= TIMEOUT)
                 rs <= R_SYNC;                // half a packet: drop it
-            else if (rs == R_WAIT) begin     // inference running / reply going out
-                if (res_valid) begin reply <= 2'd1; reply_go <= 1'b1; rs <= R_SYNC; end
+            else if (rs == R_WAIT) begin     // waiting for the inference result
+                if (res_valid) begin pend <= 2'd1; rs <= R_SYNC; end
             end else if (rx_valid) case (rs)
                 R_SYNC: if (rx_data == 8'hA5) rs <= R_CMD;
                 R_CMD:  begin
@@ -104,12 +109,11 @@ module kws_uart_link #(
                     req <= 1'b1;
                     rs  <= R_WAIT;
                 end else begin
-                    reply <= 2'd2; reply_go <= 1'b1; rs <= R_SYNC;
+                    pend <= 2'd2; rs <= R_SYNC;
                 end
                 R_PCHK: begin
-                    reply <= (rx_data == 8'h50) ? 2'd3 : 2'd2;
-                    reply_go <= 1'b1;
-                    rs <= R_SYNC;
+                    pend <= (rx_data == 8'h50) ? 2'd3 : 2'd2;
+                    rs   <= R_SYNC;
                 end
                 default: rs <= R_SYNC;
             endcase
@@ -122,7 +126,6 @@ module kws_uart_link #(
     reg [15:0]  r_cycles;
     reg [7:0]   r_status;
     reg [4:0]   ti;                          // byte index 0..29
-    reg         sending;
     reg [7:0]   csum;
 
     reg [7:0] byte_at;
@@ -144,14 +147,14 @@ module kws_uart_link #(
             r_class <= 3'd0; r_scores <= 192'd0; r_cycles <= 16'd0; r_status <= 8'd0;
         end else begin
             tx_send <= 1'b0;
-            if (reply_go && !sending) begin
+            if (take) begin
                 sending  <= 1'b1;
                 ti       <= 5'd0;
                 csum     <= 8'd0;
-                r_status <= (reply == 2'd1) ? 8'd0 : (reply == 2'd2) ? 8'd1 : 8'd2;
-                r_class  <= (reply == 2'd1) ? res_class  : 3'd0;
-                r_scores <= (reply == 2'd1) ? res_scores : 192'd0;
-                r_cycles <= (reply == 2'd1) ? res_cycles : 16'd0;
+                r_status <= (pend == 2'd1) ? 8'd0 : (pend == 2'd2) ? 8'd1 : 8'd2;
+                r_class  <= (pend == 2'd1) ? res_class  : 3'd0;
+                r_scores <= (pend == 2'd1) ? res_scores : 192'd0;
+                r_cycles <= (pend == 2'd1) ? res_cycles : 16'd0;
             end else if (sending && !tx_busy && !tx_send) begin
                 tx_data <= byte_at;
                 tx_send <= 1'b1;

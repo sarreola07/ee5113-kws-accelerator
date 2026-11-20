@@ -10,8 +10,9 @@
 //   6. damaged checksum word, BTNU       -> Err (a missing .mem file can't give a false PASS)
 //   7. UART (live words): send test clips the way fpga/kws_live.py does, for INT8 and
 //      INT4; the reply must hold Python's class and all 6 scores, the display "LI <word>".
-//      A bad checksum must not start a run, a ping must answer, and a half-sent packet
-//      must be dropped after the timeout.
+//      A bad checksum must not start a run, a ping must answer, a half-sent packet
+//      must be dropped after the timeout, and a reply that is ready while another one
+//      is still going out must wait and follow it (two pings back to back -> two pongs).
 // The expected "words correct" counts are computed from the .mem files, so the test
 // still works after the model is retrained. Debounce is shortened to 4 clocks and
 // every wait has a timeout.
@@ -75,7 +76,7 @@ module tb_fpga_top;
 
     task check;
         input ok;
-        input [8*48-1:0] what;
+        input [8*64-1:0] what;
         begin
             if (ok !== 1'b1) begin
                 $display("    ERROR: %0s", what);
@@ -111,11 +112,14 @@ module tb_fpga_top;
     endtask
 
 
+    reg [7:0] e8 [0:199], l8 [0:199], e4 [0:199], l4 [0:199];   // Python's class, true word
+
     //---------------------------------------------------------------- UART (PC side)
+    localparam ACC8 = 23, ACC4 = 15;         // = KWS_ACC_W of weights/int8 and int4 (as in the top)
     reg [7:0]   x8 [0:200*256-1];           // the same inputs the board's ROMs hold
     reg [3:0]   x4 [0:200*256-1];
-    reg [22:0]  g8 [0:200*8-1];             // Python's 6 scores per clip
-    reg [14:0]  g4 [0:200*8-1];
+    reg [ACC8-1:0] g8 [0:200*8-1];          // Python's 6 scores per clip
+    reg [ACC4-1:0] g4 [0:200*8-1];
     initial begin
         $readmemh("int8_inputs256.mem", x8); $readmemh("int4_inputs256.mem", x4);
         $readmemh("int8_logits8.mem", g8);   $readmemh("int4_logits8.mem", g4);
@@ -213,7 +217,8 @@ module tb_fpga_top;
             want_c = prec ? e4[c] : e8[c];
             bad_s = 0;
             for (k = 0; k < 6; k = k + 1) begin
-                want_s = prec ? {{17{g4[c*8+k][14]}}, g4[c*8+k]} : {{9{g8[c*8+k][22]}}, g8[c*8+k]};
+                want_s = prec ? {{(32-ACC4){g4[c*8+k][ACC4-1]}}, g4[c*8+k]}
+                              : {{(32-ACC8){g8[c*8+k][ACC8-1]}}, g8[c*8+k]};
                 if (r_score[k] !== want_s) bad_s = bad_s + 1;
             end
             repeat (5) @(posedge clk);
@@ -226,7 +231,6 @@ module tb_fpga_top;
     endtask
 
     // expected "words correct" counts, from the same .mem files the board uses
-    reg [7:0] e8 [0:199], l8 [0:199], e4 [0:199], l4 [0:199];
     integer i, want8, want4;
     initial begin
         $readmemh("int8_expected.mem", e8); $readmemh("int8_labels.mem", l8);
@@ -321,6 +325,20 @@ module tb_fpga_top;
         for (i = 0; i < 10; i = i + 1) uart_send(8'h01);
         repeat (6000) @(posedge clk);                  // longer than UART_TIMEOUT
         check_live(1'b0, 8'd2);
+
+        $display("== 7e. UART: two pings back to back; the second pong waits for the first");
+        fork
+            begin
+                uart_send(8'hA5); uart_send(8'h50); uart_send(8'h50);
+                uart_send(8'hA5); uart_send(8'h50); uart_send(8'h50);   // while pong 1 goes out
+            end
+            begin
+                uart_recv_reply; decode_reply; i = r_status;
+                uart_recv_reply; decode_reply;
+            end
+        join
+        $display("    status %0d and %0d (expect 2 and 2)", i, r_status);
+        check(i == 2 && r_status == 2, "both pings must get a pong");
 
         if (errors == 0) $display("*** FPGA TOP TEST PASSED ***");
         else             $display("*** FPGA TOP TEST FAILED (%0d errors) ***", errors);

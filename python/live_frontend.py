@@ -14,17 +14,25 @@ import quant as Q
 from mfcc import mfcc
 
 FRONTEND_FILE = C.HW_DIR / "frontend.npz"
+# the config.py settings the front end depends on (stored in frontend.npz, checked by load())
+CFG_KEYS = ("SAMPLE_RATE", "CLIP_SAMPLES", "FRAME_LEN", "FRAME_HOP", "N_FFT", "N_MELS", "N_MFCC",
+            "F_MIN", "F_MAX")
 
 
 def load(path=FRONTEND_FILE):
-    """{'mean', 'std', 'words', 's_x': {bits: scale}, 'cfg'} from frontend.npz."""
+    """{'mean', 'std', 'words', 's_x': {bits: scale}, 'cfg'} from frontend.npz.
+    Stops if the file was made with other MFCC settings or words than config.py has."""
     d = np.load(path)
     cfg = json.loads(str(d["cfg"]))
-    for key in ("sample_rate", "clip_samples", "frame_len", "frame_hop", "n_fft", "n_mels", "n_mfcc"):
-        if cfg[key] != getattr(C, key.upper()):
-            raise ValueError(f"{path} was made with {key}={cfg[key]}, config.py has {getattr(C, key.upper())}; "
-                             "run python/export_frontend.py again")
-    return {"mean": d["mean"], "std": d["std"], "words": [str(w) for w in d["words"]],
+    words = [str(w) for w in d["words"]]
+    stale = [f"{k.lower()} {cfg.get(k.lower())} (config.py: {getattr(C, k)})"
+             for k in CFG_KEYS if cfg.get(k.lower()) != getattr(C, k)]
+    if words != list(C.WORDS):
+        stale.append(f"words {words} (config.py: {list(C.WORDS)})")
+    if stale:
+        raise ValueError(f"{path} does not match python/config.py: " + "; ".join(stale)
+                         + ". Run python python/export_frontend.py again")
+    return {"mean": d["mean"], "std": d["std"], "words": words,
             "s_x": {int(b): float(s) for b, s in zip(d["bits"], d["s_x"])}, "cfg": cfg}
 
 

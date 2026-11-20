@@ -3,7 +3,7 @@
 > **This is the living setup guide.** If you follow it from top to bottom on a
 > fresh machine, you should end up able to run every part of the project.
 > Whenever a step changes, it is updated here, in the same commit as the change
-> (see `CLAUDE.md`). Last updated: **2026-11-19** (combined design: trained model, tsmc18 flow, FPGA demo).
+> (see `CLAUDE.md`). Last updated: **2026-11-20** (FPGA board self-check and live words over the UART).
 
 ## 0. What runs where
 
@@ -141,13 +141,18 @@ go in `alt/sergio_bram_design/flow/config.tcl`.
 3. Open a **Command Prompt** in the repo folder. If `vivado` isn't found, first run
    `C:\Xilinx\Vivado\<version>\settings64.bat`. Build and load the bitstream:
    ```bat
-   fpga\build.bat nexys4 program
+   fpga\build.bat <board> program
    ```
-   - It takes about 25 minutes and writes `results\fpga\kws_fpga_top_<board>.bit` and the reports.
-   - **It stops with an error, and does not copy the bitstream, if setup or hold timing fails.**
-   - The design runs at 50 MHz (MMCM).
-   - `fpga\program.bat <board>` only loads an existing bitstream again. Rebuild after any change to `rtl/`, `fpga/`
-     or the `.mem` files.
+   - `<board>` is the name from step 1, for example `fpga\build.bat nexys4 program`.
+   - It takes about 25 minutes. When setup and hold timing are met, it writes `results\fpga\kws_fpga_top_<board>.bit`
+     and the reports in `results\fpga\<board>\`, then loads the board.
+   - **If timing fails, it stops with an error, copies nothing to `results\fpga`, and does not program the board.**
+     The reports of the failed run are in `fpga\work\<board>\`.
+   - The design runs at 50 MHz (MMCM). If **setup** timing (WNS) fails, use the 40 MHz fallback in
+     `docs/progress/2026-11-20-design-comparison-board-check.md`; a slower clock does not fix **hold** (WHS) failures.
+   - `fpga\program.bat <board>` only loads an existing bitstream again. The bitstream committed in `results\fpga\`
+     is older than the self-check and the UART, so build once first. Rebuild after any change to `rtl/`, `fpga/` or
+     the `.mem` files.
 4. **Controls** (INT8 and INT4 are both in one bitstream):
    - **SW7–SW0**: test clip 0–199. **SW15**: down = INT8, up = INT4. **SW14**: fault test (see below).
    - **BTNC**: run one clip. The right digits show the word (YES / nO / On / OFF / LEFt / rIGHt), the left digits
@@ -167,8 +172,15 @@ go in `alt/sergio_bram_design/flow/config.tcl`.
    | SW14 up, SW15 down, BTNU, then SW14 down again | red LED16, `F000 199`: the fault test corrupted clip 0, so the checker must fail there |
 
    - `F<nnn> <mmm>`: clip `nnn` was the first to differ from Python, and `mmm` clips matched.
-   - `Err ----`: the board's golden data failed its checksum, which means a `.mem` file was missing or damaged when the
-     bitstream was built. Run `python fpga/gen_fpga_mem.py --check`, regenerate if it says so, and rebuild.
+   - `Err ----`: the checksum of the board's golden data (Python's classes and scores, the labels) is wrong, so one
+     of those `.mem` files was missing or damaged when the bitstream was built. Run
+     `python fpga/gen_fpga_mem.py --check`, regenerate if it says so, and rebuild.
+   - `F000   0` (no clip matches): most likely the weights, biases or inputs ROM was empty. Vivado fills a ROM whose
+     `.mem` file it can't open with zeros and only warns: search
+     `fpga\work\<board>\kws_fpga.runs\synth_1\runme.log` for `[Synth 8-4445]`.
+   - A PASS proves that the board matches the `.mem` files it was built with. If `fpga/mem` was older than
+     `weights/`, BTNU can still pass while `kws_live.py --selftest` (step 6) fails, because the self-test uses the
+     current `weights/`. `python fpga/gen_fpga_mem.py --check` catches this before a build.
 6. **Live words from your voice** (PC microphone → PC computes MFCC → board recognizes the word):
    ```bat
    pip install -r fpga/requirements-live.txt
@@ -183,6 +195,10 @@ go in `alt/sergio_bram_design/flow/config.tcl`.
    - Live accuracy will be lower than the 86.7 % test accuracy: a different microphone, room noise, and the
      word's position in the 1-second window. Speak clearly, close to the microphone, one word per recording.
    - `--mock` runs the same script with a software model instead of the board (no hardware needed).
+   - The script stops if `weights/frontend.npz` doesn't belong to the current model or `python/config.py`. After a
+     retrain, run `python python/export_frontend.py`.
+   - Without a board, on Linux, crosby3 or macOS with Icarus Verilog: `python sim/uart_xcheck.py` sends the packets
+     this script makes through the Verilog board design and checks the replies (`UART CROSS-CHECK PASSED`).
 7. To keep new numbers for the report, commit `results/fpga/` and write down what the board showed in a progress log.
 
 ## 5. Daily workflow (both partners)
@@ -226,8 +242,12 @@ git push                              # 5. partner pulls to continue
 
 | Symptom | Fix |
 |---------|-----|
-| `kws_live.py`: "No board answered" | Program the bitstream from this branch (an older one has no UART), use the PROG/UART micro-USB port, close any serial terminal, or pass `--port COMx` (Device Manager → Ports) |
-| BTNU shows `Err ----` | A `.mem` file was missing or stale when the bitstream was built: `python fpga/gen_fpga_mem.py --check`, then rebuild |
+| `kws_live.py`: "No board answered" | Program a bitstream with the UART, built from the 2026-11-20 sources or later (the committed one is older), use the PROG/UART micro-USB port, close any serial terminal, or pass `--port COMx` (Device Manager → Ports) |
+| BTNU shows `Err ----` | A golden-data `.mem` file (expected, labels, logits8, check) was missing or damaged when the bitstream was built: `python fpga/gen_fpga_mem.py --check`, then rebuild |
+| BTNU shows `F000   0` | A weights, biases or inputs `.mem` file was missing at build time, so Vivado used zeros: search `fpga\work\<board>\kws_fpga.runs\synth_1\runme.log` for `[Synth 8-4445]`, then rebuild |
+| BTNU passes but `kws_live.py --selftest` fails | `fpga/mem` was older than `weights/`: `python fpga/gen_fpga_mem.py`, then rebuild |
+| `build.bat` stops with "timing FAILED" | Setup (WNS < 0): use the 40 MHz fallback in the 2026-11-20 progress log. Hold (WHS < 0): look at the failing paths in `fpga\work\<board>\timing_summary.rpt` |
+| `kws_live.py`: "frontend.npz does not match" / "has s_x" | The model or `config.py` changed after the front end was exported: `python python/export_frontend.py` (needs `python/data/features.npz` from `prepare_data.py`) |
 | `--mic` hears nothing (macOS) | Allow microphone access for Terminal in System Settings → Privacy & Security |
 | `rc: command not found` / `innovus: command not found` | You forgot `source /home/opt2/setmyenv` in this terminal |
 | RC/Innovus can't find `slow.lib` or `all.lef` | Copy the tsmc18 files into `flow/tsmc18/` (§3) |
