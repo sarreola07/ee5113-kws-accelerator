@@ -24,8 +24,9 @@ New-Item -ItemType Directory -Force $Run | Out-Null
 
 if ($Target -eq "fpga") {
     Copy-Item "$Root\fpga\mem\*.mem", "$Root\rtl\kws_accel.v", "$Root\fpga\kws_fpga_core.v",
-              "$Root\fpga\kws_fpga_top.v", "$Root\tb\tb_fpga_top.v" $Run -Force
-    $srcs = "kws_accel.v", "kws_fpga_core.v", "kws_fpga_top.v", "tb_fpga_top.v"; $top = "tb_fpga_top"
+              "$Root\fpga\kws_fpga_top.v", "$Root\fpga\uart.v", "$Root\fpga\kws_uart_link.v",
+              "$Root\tb\tb_fpga_top.v" $Run -Force
+    $srcs = "kws_accel.v", "kws_fpga_core.v", "kws_fpga_top.v", "uart.v", "kws_uart_link.v", "tb_fpga_top.v"; $top = "tb_fpga_top"
 } elseif ($Target -in "int8", "int4") {
     Copy-Item "$Root\weights\$Target\*" $Run -Force
     Copy-Item "$Root\rtl\kws_accel.v", "$Root\rtl\kws_top.v", "$Root\tb\tb_kws.v" $Run -Force

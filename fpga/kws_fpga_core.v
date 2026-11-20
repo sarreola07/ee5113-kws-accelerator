@@ -14,6 +14,8 @@
 // word and checksums so the top can tell a missing .mem file from a real
 // mismatch. 'fault' flips the lowest bit of every input of clip 0, so the
 // board must report a FAIL at clip 0 (proves the checker is not stuck on PASS).
+// use_ext / ext_x: the inputs come from the live-input RAM in the top instead
+// (250 values sent by fpga/kws_live.py over the UART).
 //============================================================================
 `timescale 1ns/1ps
 
@@ -34,14 +36,19 @@ module kws_fpga_core #(
     input  wire             start,      // 1-cycle pulse
     input  wire [7:0]       clip,       // test clip 0..199, held during an inference
     input  wire             fault,      // test switch: corrupt the inputs of clip 0
+    input  wire             use_ext,    // 1 = read the inputs from ext_x (live audio from the PC)
+    input  wire [BW-1:0]    ext_x,      // input value at address x_addr
+    output wire [7:0]       x_addr,     // input index 0..249 the core is reading
     output wire             busy,
     output wire             done,       // 1-cycle pulse, class_out and logits_ok are valid
     output wire [2:0]       class_out,  // recognized word
     output wire [2:0]       expected,   // what the Python model says for this clip
     output wire [2:0]       label,      // the true word of this clip
     output wire             logits_ok,  // all 6 scores of the last run equal Python's
-    output wire             score_wr,   // 1 cycle: score_gold is the golden score just compared
-    output wire [ACC_W-1:0] score_gold,
+    output wire             score_wr,   // 1 cycle: output score score_idx is ready
+    output wire [2:0]       score_idx,
+    output wire [ACC_W-1:0] score_val,  // the score the hardware computed
+    output wire [ACC_W-1:0] score_gold, // the score Python computed for this clip
     output wire [63:0]      check       // {magic, sum expected, sum labels, sum scores}
 );
     (* rom_style = "distributed" *) reg [BW-1:0]    xrom [0:200*256-1];
@@ -62,11 +69,10 @@ module kws_fpga_core #(
         $readmemh(K_FILE, krom);
     end
 
-    wire [7:0]       x_addr;
     wire [12:0]      w_addr;
     wire [5:0]       b_addr;
     wire             flip   = fault && (clip == 8'd0);
-    wire [BW-1:0]    x_data = xrom[{clip, x_addr}] ^ {{(BW-1){1'b0}}, flip};
+    wire [BW-1:0]    x_data = use_ext ? ext_x : (xrom[{clip, x_addr}] ^ {{(BW-1){1'b0}}, flip});
     wire [BW-1:0]    w_data = wrom[w_addr];
     wire [ACC_W-1:0] b_data = brom[b_addr];
 
@@ -93,6 +99,8 @@ module kws_fpga_core #(
 
     assign logits_ok  = ok_r;
     assign score_wr   = dbg_out_wr;
+    assign score_idx  = dbg_out_idx[2:0];
+    assign score_val  = dbg_acc;
     assign score_gold = gold;
     assign check      = {krom[0], krom[1], krom[2], krom[3]};
     assign expected   = erom[clip][2:0];

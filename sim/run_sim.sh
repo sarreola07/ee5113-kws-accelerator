@@ -23,7 +23,8 @@ RUN="$ROOT/work/sim/$TARGET"
 mkdir -p "$RUN" && cd "$RUN" && rm -rf sim.log xsim.dir xcelium.d sim.vvp
 if [ "$TARGET" = fpga ]; then
     cp "$ROOT"/fpga/mem/*.mem .
-    SRCS=("$ROOT/rtl/kws_accel.v" "$ROOT/fpga/kws_fpga_core.v" "$ROOT/fpga/kws_fpga_top.v" "$ROOT/tb/tb_fpga_top.v")
+    SRCS=("$ROOT/rtl/kws_accel.v" "$ROOT/fpga/kws_fpga_core.v" "$ROOT/fpga/kws_fpga_top.v"
+          "$ROOT/fpga/uart.v" "$ROOT/fpga/kws_uart_link.v" "$ROOT/tb/tb_fpga_top.v")
     TOP=tb_fpga_top
 else
     W="$ROOT/weights/$TARGET"

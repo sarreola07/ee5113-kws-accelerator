@@ -64,8 +64,13 @@ set_property -dict { PACKAGE_PIN C12 IOSTANDARD LVCMOS33 } [get_ports { CPU_RESE
 set_property -dict { PACKAGE_PIN E16 IOSTANDARD LVCMOS33 } [get_ports { BTNC }]
 set_property -dict { PACKAGE_PIN F15 IOSTANDARD LVCMOS33 } [get_ports { BTNU }]
 
+## USB-UART (same micro-USB cable as programming): live words from fpga/kws_live.py
+set_property -dict { PACKAGE_PIN C4  IOSTANDARD LVCMOS33 } [get_ports { UART_RX }]   ;# PC -> FPGA
+set_property -dict { PACKAGE_PIN D4  IOSTANDARD LVCMOS33 } [get_ports { UART_TX }]   ;# FPGA -> PC
+
 ## Asynchronous inputs (switches, buttons) do not need timing
-set_false_path -from [get_ports { SW[*] SW14 SW15 BTNC BTNU CPU_RESETN }]
+set_false_path -from [get_ports { SW[*] SW14 SW15 BTNC BTNU CPU_RESETN UART_RX }]
+set_false_path -to   [get_ports { UART_TX }]
 
 ## Configuration
 set_property CFGBVS VCCO [current_design]

@@ -28,7 +28,8 @@ create_project kws_fpga "$here/work/$BOARD" -part $PART -force
 
 # design + ROM files (the .mem files are found by name in synthesis and simulation)
 # (paths go in [list] so folder names with spaces work)
-add_files -norecurse [concat [list "$root/rtl/kws_accel.v" "$here/kws_fpga_core.v" "$here/kws_fpga_top.v"] \
+add_files -norecurse [concat [list "$root/rtl/kws_accel.v" "$here/kws_fpga_core.v" "$here/kws_fpga_top.v" \
+                                   "$here/uart.v" "$here/kws_uart_link.v"] \
                              [glob "$here/mem/*.mem"]]
 add_files -fileset constrs_1 -norecurse [list "$here/constraints/$XDC"]
 set_property top kws_fpga_top [get_filesets sources_1]
