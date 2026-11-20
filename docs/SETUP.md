@@ -3,7 +3,7 @@
 > **This is the living setup guide.** If you follow it from top to bottom on a
 > fresh machine, you should end up able to run every part of the project.
 > Whenever a step changes, it is updated here, in the same commit as the change
-> (see `CLAUDE.md`). Last updated: **2026-11-19** (combined design: trained model, tsmc18 flow, FPGA demo).
+> (see `CLAUDE.md`). Last updated: **2026-11-19** (FPGA demo: switch control, power-on self-test, UART report).
 
 ## 0. What runs where
 
@@ -135,7 +135,10 @@ go in `alt/sergio_bram_design/flow/config.tcl`.
    - plain **Nexys 4** (no "DDR") → `nexys4`
    - **Nexys A7-50T** → `nexys_a7_50t`
 
-   The pin files in `fpga/constraints/` follow Digilent's official master XDC files.
+   The pin files in `fpga/constraints/` follow Digilent's official master XDC files. The three boards
+   have the same FPGA but different pins, so the wrong bitstream loads fine and then does nothing useful.
+   Not sure? In Vivado's Hardware Manager, the target's `PARAM.DEVICE` property names the board
+   (for example `jsn-Nexys4-…` is the original Nexys 4).
 2. Plug in the board's USB-PROG port and power it on.
 3. Open a **Command Prompt** in the repo folder. If `vivado` isn't found, first run
    `C:\Xilinx\Vivado\<version>\settings64.bat`. Then load the prebuilt bitstream:
@@ -148,12 +151,19 @@ go in `alt/sergio_bram_design/flow/config.tcl`.
    ```
    Check `results\fpga\<board>\timing_summary.rpt`: no negative slack. The design runs at 50 MHz (MMCM).
 4. On the board (both INT8 and INT4 are in one bitstream):
-   - **SW7–SW0**: test clip number 0–199. **SW15**: down = INT8, up = INT4.
-   - **BTNC**: run that clip. The right digits show the word (YES / nO / On / OFF / LEFt / rIGHt),
-     the left digits the clip number. LED[2:0] = word, LED[6:4] = true word, LED12 = correct,
-     LED13 = same answer as Python.
-   - **BTNU**: run all 200 clips. Expect `176  200` (INT8) and `177  200` (INT4): words correct, and
-     clips that match Python.
+   - **Power-on self-test** (also after CPU_RESET): all 200 clips on INT8 and on INT4. The display shows
+     `--------`, then `PASS` for 3 s, and **LED11** stays on. PASS = all 400 answers are the same as Python.
+   - **SW7–SW0**: test clip number 0–199 in binary. **SW15**: down = INT8, up = INT4.
+   - **SW14 down (one clip)**: the selected clip runs by itself whenever the switches change. The left
+     digits show the clip number, the right digits the word (YES / nO / On / OFF / LEFt / rIGHt).
+     LED[2:0] = word, LED[6:4] = true word, LED12 = correct, LED13 = same answer as Python.
+   - **SW14 up (all clips)**: runs all 200 clips. Expect `176  200` (INT8) and `177  200` (INT4): words
+     correct, and clips that match Python. Flip SW15 to switch precision; it reruns by itself.
+   - **BTNC** / **BTNU** rerun one clip / all clips (optional; the switches are enough).
+   - **Text report (optional):** open the board's COM port (Device Manager → Ports, "USB Serial Port")
+     at **115200 baud** in PuTTY, Tera Term or any serial terminal. The board prints one line per result,
+     e.g. `INT8 all 200 clips: 176/200 correct, 200/200 same as Python -> PASS`. Press CPU_RESET to see
+     the self-test lines again.
 5. To keep new numbers for the report, commit `results/fpga/`.
 
 ## 5. Daily workflow (both partners)

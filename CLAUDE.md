@@ -86,11 +86,12 @@ python fpga/gen_fpga_mem.py            # FPGA ROM files after a re-export
 cd flow/tsmc18 && rc -f syn_int8.g && rc -f fmax_int8.g && innovus -files pnr_int8.tcl   # crosby3
 cd flow/tsmc18 && bash results.sh      # INT8 vs INT4 table from the reports
 fpga\build.bat nexys4ddr               # Windows: build (nexys4ddr | nexys4 | nexys_a7_50t), ~25 min
-fpga\program.bat nexys4ddr             # Windows: load results/fpga/kws_fpga_top_<board>.bit
+fpga\program.bat nexys4                # Windows: load results/fpga/kws_fpga_top_<board>.bit
 ```
 
-Expected results: RTL 0 mismatches on 200 clips (INT8 176/200 correct, INT4 177/200); FPGA BTNU
-run-all shows `176  200` (INT8) and `177  200` (INT4); ASIC numbers in `results/RESULTS.md`.
+Expected results: RTL 0 mismatches on 200 clips (INT8 176/200 correct, INT4 177/200); FPGA power-on
+self-test shows `PASS` (LED11 on), SW14-up run-all shows `176  200` (INT8) and `177  200` (INT4), and the
+USB-UART (115200 baud) prints the same lines; ASIC numbers in `results/RESULTS.md`.
 
 ## Problems that were already solved (keep these fixes)
 
@@ -107,3 +108,6 @@ run-all shows `176  200` (INT8) and `177  200` (INT4); ASIC numbers in `results/
    `xsim.simulate.custom_tcl` a relative path; don't pass `-d A=B` to `xvlog.bat` (the batch file splits at `=`).
 6. **Vivado from an agent shell** – if Vivado runs fail with "Spawn failed: Broken pipe", remove
    `NoDefaultCurrentDirectoryInExePath` from the environment before starting it (`sim/run_sim.ps1` does this).
+7. **Board variants** – the original Nexys 4 and the Nexys 4 DDR / A7 use the same FPGA but different pins.
+   A bitstream for the wrong board programs fine and then shows nothing useful. Vivado's Hardware Manager
+   names the board in the target's `PARAM.DEVICE` (`jsn-Nexys4-…` = original Nexys 4 → `nexys4`).

@@ -39,6 +39,6 @@ try {
     & "$V\xvlog.bat" @srcs -i . | Out-File xvlog.out
     & "$V\xelab.bat" $top -s sim_snap -debug off | Out-File xelab.out
     & "$V\xsim.bat" sim_snap -R | Tee-Object -FilePath sim.log |
-        Select-String "mismatches|Accuracy|Cycles|7-segment|correct|TEST|ERROR"
+        Select-String "mismatches|Accuracy|Cycles|7-segment|correct|TEST|ERROR|^== |UART>"
 } finally { Pop-Location }
 if (Select-String -Path "$Run\sim.log" -Pattern "TEST PASSED" -Quiet) { exit 0 } else { exit 1 }
