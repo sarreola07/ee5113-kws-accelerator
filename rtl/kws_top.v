@@ -26,7 +26,8 @@ module kws_int8 (
         .x_addr(x_addr), .x_data(x_data),
         .w_addr(w_addr), .w_data(w_data),
         .b_addr(b_addr), .b_data(b_data),
-        .busy(busy), .done(done), .class_out(class_out));
+        .busy(busy), .done(done), .class_out(class_out),
+        .dbg_out_wr(), .dbg_out_idx(), .dbg_acc());          // FPGA self-check only
 endmodule
 
 
@@ -49,5 +50,6 @@ module kws_int4 (
         .x_addr(x_addr), .x_data(x_data),
         .w_addr(w_addr), .w_data(w_data),
         .b_addr(b_addr), .b_data(b_data),
-        .busy(busy), .done(done), .class_out(class_out));
+        .busy(busy), .done(done), .class_out(class_out),
+        .dbg_out_wr(), .dbg_out_idx(), .dbg_acc());          // FPGA self-check only
 endmodule

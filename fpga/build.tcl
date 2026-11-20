@@ -52,10 +52,20 @@ file mkdir $rep
 report_timing_summary -file "$rep/timing_summary.rpt"
 report_utilization    -file "$rep/utilization.rpt"
 set wns [get_property SLACK [get_timing_paths -delay_type max]]
+set whs [get_property SLACK [get_timing_paths -delay_type min]]
 set bit "$root/results/fpga/kws_fpga_top_$BOARD.bit"
+# A bitstream that misses timing can give wrong answers on the board, so it is
+# never copied to results/ (the run folder keeps it for debugging).
+if {$wns eq "" || $whs eq "" || $wns < 0 || $whs < 0} {
+    puts "=================================================================="
+    puts " ERROR: timing FAILED (setup WNS = $wns ns, hold WHS = $whs ns)."
+    puts " The bitstream was NOT copied to results/fpga. See $rep/timing_summary.rpt"
+    puts "=================================================================="
+    exit 1
+}
 file copy -force [lindex [glob "$here/work/$BOARD/kws_fpga.runs/impl_1/*.bit"] 0] $bit   ;# lindex: glob returns a list
 puts "=================================================================="
 puts " Bitstream: $bit   (part $PART)"
-puts " Worst setup slack (50 MHz MMCM clock): $wns ns  (negative = timing FAILED)"
+puts " Timing met at 50 MHz: setup WNS = $wns ns, hold WHS = $whs ns"
 puts " Program the board:  vivado -mode batch -source fpga/program.tcl -tclargs $BOARD"
 puts "=================================================================="
