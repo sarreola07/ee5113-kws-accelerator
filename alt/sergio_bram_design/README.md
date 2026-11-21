@@ -1,7 +1,8 @@
 # Alternative design: on-chip ROM / block-RAM version (sarreola07)
 
-This folder is the original version of the repo (up to commit `c4efb29`), moved here unchanged
-when the two versions of the project were combined on 2026-11-19. Nothing in it was edited, and
+This folder is the original version of the repo (up to commit `c4efb29`), moved here
+when the two versions of the project were combined on 2026-11-19. File contents were not edited (the
+move dropped the executable bit of the four `.sh` scripts; it was restored on 2026-11-21), and
 its scripts still work from this folder because they find their files relative to it:
 
 ```bash

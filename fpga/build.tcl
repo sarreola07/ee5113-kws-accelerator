@@ -10,8 +10,9 @@
 #            nexys4        original Nexys 4 (no "DDR" on the board)
 #            nexys_a7_50t  Nexys A7-50T (nexys4ddr pins, smaller FPGA)
 #
-# Output: project in fpga/work/<board>/ (git-ignored), and
-#         results/fpga/kws_fpga_top_<board>.bit + results/fpga/<board>/*.rpt
+# Output: project and reports in fpga/work/<board>/ (git-ignored). Only when setup AND
+#         hold timing are met: results/fpga/kws_fpga_top_<board>.bit + results/fpga/<board>/*.rpt
+#         (so results/fpga always holds a bitstream together with its own reports).
 # Takes about 25 minutes on a laptop (the ROMs with the 200 test clips are big).
 #############################################################################
 set BOARD [expr {[info exists argv] && [llength $argv] > 0 ? [lindex $argv 0] : "nexys4ddr"}]
@@ -47,15 +48,27 @@ wait_on_run impl_1
 if {[get_property PROGRESS [get_runs impl_1]] ne "100%"} { error "implementation failed" }
 
 open_run impl_1
-set rep "$root/results/fpga/$BOARD"
-file mkdir $rep
-report_timing_summary -file "$rep/timing_summary.rpt"
-report_utilization    -file "$rep/utilization.rpt"
+set run "$here/work/$BOARD"
+report_timing_summary -file "$run/timing_summary.rpt"
+report_utilization    -file "$run/utilization.rpt"
 set wns [get_property SLACK [get_timing_paths -delay_type max]]
+set whs [get_property SLACK [get_timing_paths -delay_type min]]
+# A bitstream that misses timing can give wrong answers on the board, so neither it nor
+# its reports are copied to results/ (the run folder keeps them for debugging).
+if {$wns eq "" || $whs eq "" || $wns < 0 || $whs < 0} {
+    puts "=================================================================="
+    puts " ERROR: timing FAILED (setup WNS = $wns ns, hold WHS = $whs ns)."
+    puts " Nothing was copied to results/fpga. See $run/timing_summary.rpt"
+    puts "=================================================================="
+    exit 1
+}
+set rep "$root/results/fpga/$BOARD"
 set bit "$root/results/fpga/kws_fpga_top_$BOARD.bit"
-file copy -force [lindex [glob "$here/work/$BOARD/kws_fpga.runs/impl_1/*.bit"] 0] $bit   ;# lindex: glob returns a list
+file mkdir $rep
+file copy -force "$run/timing_summary.rpt" "$run/utilization.rpt" $rep
+file copy -force [lindex [glob "$run/kws_fpga.runs/impl_1/*.bit"] 0] $bit   ;# lindex: glob returns a list
 puts "=================================================================="
 puts " Bitstream: $bit   (part $PART)"
-puts " Worst setup slack (50 MHz MMCM clock): $wns ns  (negative = timing FAILED)"
+puts " Timing met: setup WNS = $wns ns, hold WHS = $whs ns   (reports in $rep)"
 puts " Program the board:  vivado -mode batch -source fpga/program.tcl -tclargs $BOARD"
 puts "=================================================================="

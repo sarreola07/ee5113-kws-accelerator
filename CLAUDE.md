@@ -68,7 +68,7 @@ Two students work on it from Mac, Windows and crosby3, and GitHub is how they st
   are copied into `flow/tsmc18/` on crosby3 and are git-ignored. **Never commit them** (the repo is public).
 - Never commit tool run directories (`work/`, `fpga/work/`, `flow/tsmc18/out_*`, `*.enc.dat`, logs).
   Curated reports go into `results/<int8|int4|fpga>/`: use `flow/tsmc18/save_results.sh <prec>`; FPGA
-  builds write `results/fpga/` themselves.
+  builds write `results/fpga/` themselves, and only when setup and hold timing are met.
 - Cadence tools run only on crosby3. Claude usually runs on a laptop, so the loop is:
   1. Edit here and push.
   2. The student runs `git pull` on crosby3, then the flow in `flow/tsmc18/RUN_GUIDE.md`.
@@ -85,8 +85,8 @@ python python/prepare_data.py && python python/train.py && python python/export_
 python fpga/gen_fpga_mem.py            # FPGA ROM files after a re-export
 cd flow/tsmc18 && rc -f syn_int8.g && rc -f fmax_int8.g && innovus -files pnr_int8.tcl   # crosby3
 cd flow/tsmc18 && bash results.sh      # INT8 vs INT4 table from the reports
-fpga\build.bat nexys4ddr               # Windows: build (nexys4ddr | nexys4 | nexys_a7_50t), ~25 min
-fpga\program.bat nexys4                # Windows: load results/fpga/kws_fpga_top_<board>.bit
+fpga\build.bat nexys4ddr program       # Windows: build (nexys4ddr | nexys4 | nexys_a7_50t), ~20 min, then load it
+fpga\program.bat nexys4ddr             # Windows: load results/fpga/kws_fpga_top_<board>.bit (team board: Nexys A7-100T = nexys4ddr)
 python fpga/mic_demo.py                # PC microphone -> board shows the word (--clips: 200 test clips over UART)
 ```
 
@@ -114,3 +114,8 @@ Python over the UART); ASIC numbers in `results/RESULTS.md`.
 7. **Board variants** – the original Nexys 4 and the Nexys 4 DDR / A7 use the same FPGA but different pins.
    A bitstream for the wrong board programs fine and then shows nothing useful. Vivado's Hardware Manager
    names the board in the target's `PARAM.DEVICE` (`jsn-Nexys4-…` = original Nexys 4 → `nexys4`).
+   The team's demo board is a **Nexys A7-100T**, so it uses `nexys4ddr`.
+8. **Empty ROMs** – Vivado fills a ROM whose `.mem` file it can't open with zeros and only warns
+   (`[Synth 8-4445]` in `fpga/work/<board>/kws_fpga.runs/synth_1/runme.log`). Check for it after every build:
+   the power-on self-test compares the classes with `fpga/mem/<p>_expected.mem`, so a build with missing files
+   can still look like a PASS. `build.tcl` refuses to copy a bitstream that fails setup or hold timing.
