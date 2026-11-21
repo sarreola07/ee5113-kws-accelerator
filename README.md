@@ -96,9 +96,9 @@ far). The PC prints the FPGA's answer next to the Python model's (`same as Pytho
 ./sim/run_sim.sh fpga                              # board-level test of the FPGA top
 python python/train.py && python python/export_hw.py   # retrain + re-export (needs the dataset)
 cd flow/tsmc18 && rc -f syn_int8.g && innovus -files pnr_int8.tcl   # crosby3 (see RUN_GUIDE.md)
-fpga\program.bat nexys4                            # Windows: load the prebuilt bitstream (or nexys4ddr)
+fpga\program.bat nexys4ddr                         # Windows: load the prebuilt bitstream (Nexys A7-100T / 4 DDR; nexys4 for the original Nexys 4)
 python fpga\mic_demo.py                            # then speak: the board shows the word
-fpga\build.bat nexys4                              # Windows: rebuild for the original Nexys 4
+fpga\build.bat nexys4ddr program                   # Windows: rebuild (~20 min) and load; stops if timing fails
 ```
 
 ## Status
@@ -110,7 +110,7 @@ fpga\build.bat nexys4                              # Windows: rebuild for the or
 | RTL + testbench (bit-exact vs Python, every layer, 200 real clips) | ✅ 0 mismatches, INT8 & INT4 |
 | Synthesis + place & route (tsmc18), DRC/connectivity/antenna | ✅ both precisions, timing met at 100 MHz |
 | FPGA demo (switches, power-on self-test, UART report, PC microphone) | ✅ simulated; ✅ on a Nexys A7-100T: self-test PASS, 200 clips sent from the PC = Python (400/400); ✅ bitstreams for Nexys 4 DDR/A7 and Nexys 4, both with the microphone input (50 MHz, timing met) |
-| Final report | ✅ `docs/report/` ; ⏳ slides |
+| Final report and slides | ✅ `docs/report/` ; ✅ slides: 14 slides, the source of every number in `docs/slides/README.md` (still to add: date, board photo) |
 | Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 
 ## Progress log
@@ -122,3 +122,6 @@ fpga\build.bat nexys4                              # Windows: rebuild for the or
 | 2026-11-19 | [Combined repo: trained model, tsmc18 ASIC results, FPGA demo, report](docs/progress/2026-11-19-combined-design.md) |
 | 2026-11-19 | [FPGA demo: switch control, power-on self-test, UART report, Nexys 4 build](docs/progress/2026-11-19-fpga-switch-selftest.md) |
 | 2026-11-20 | [FPGA demo: words from the PC microphone, no switches needed](docs/progress/2026-11-20-fpga-microphone.md) |
+| 2026-11-20 | [Design comparison and review notes (PR #1's alternative FPGA design, not merged)](docs/progress/2026-11-20-design-comparison-board-check.md) |
+| 2026-11-20 | [Presentation deck: 14 slides, sources of every number](docs/progress/2026-11-20-slides-draft.md) |
+| 2026-11-21 | [Handoff: continue on the Windows PC (Nexys A7-100T)](docs/progress/2026-11-21-handoff-windows.md) |
