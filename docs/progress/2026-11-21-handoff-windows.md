@@ -20,14 +20,15 @@
   :: Command Prompt, repo root; board on USB-PROG/UART; all switches down
   git fetch
   git switch chit2000/mic-demo
-  fpga\program.bat nexys4          :: original Nexys 4 (nexys4ddr for a Nexys 4 DDR / A7-100T)
+  fpga\program.bat nexys4ddr       :: our board is a Nexys A7-100T: same pins as the Nexys 4 DDR
   python -m pip install numpy pyserial sounddevice
   python fpga\mic_demo.py --clips  :: expect 400/400 same as Python
   python fpga\mic_demo.py          :: then say yes / no / on / off / left / right
   ```
   - At power-on the display shows `--------`, then `  PASS  ` for 3 s with LED11 on.
   - SW14 up shows `176  200` (INT8). Then SW15 up shows `177  200` (INT4).
-  - Check the board label first: a bitstream for the wrong Nexys variant programs fine but does nothing.
+  - **Our board: Nexys A7-100T** (confirmed 2026-11-21), so `<board>` is `nexys4ddr` everywhere in this file. It is the
+    same board PR #2 was tested on. A bitstream for the wrong Nexys variant programs fine but does nothing.
 - **Below:** the steps for PR #1's design (build, BTNU self-check, `kws_live.py`). They still apply if PR #1's design is
   kept.
 
