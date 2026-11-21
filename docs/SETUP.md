@@ -3,7 +3,7 @@
 > **This is the living setup guide.** If you follow it from top to bottom on a
 > fresh machine, you should end up able to run every part of the project.
 > Whenever a step changes, it is updated here, in the same commit as the change
-> (see `CLAUDE.md`). Last updated: **2026-11-20** (FPGA demo: words from the PC microphone, `fpga/mic_demo.py`).
+> (see `CLAUDE.md`). Last updated: **2026-11-21** (simulation commands use `powershell -ExecutionPolicy Bypass`; the team board is a Nexys A7-100T = `nexys4ddr`).
 
 ## 0. What runs where
 
@@ -68,7 +68,7 @@ pip install -r python/requirements.txt
 
 Quick check (no dataset needed: the trained weights are committed in `weights/`):
 ```bash
-.\sim\run_sim.ps1 int8           # Windows + Vivado   -> TEST PASSED, 0 mismatches (also int4, fpga)
+powershell -ExecutionPolicy Bypass -File sim\run_sim.ps1 int8   # Windows + Vivado: TEST PASSED, 0 mismatches (also int4, fpga)
 ./sim/run_sim.sh int8              # Linux / Mac (xsim, Xcelium or Icarus)
 ```
 To retrain, `python python/prepare_data.py` first downloads Speech Commands (~2.3 GB stream, keeps ~700 MB
@@ -192,7 +192,7 @@ go in `alt/sergio_bram_design/flow/config.tcl`.
 git pull                              # 1. ALWAYS start here (on every machine)
 # 2. do the work (with Claude); run the relevant checks:
 ./sim/run_sim.sh int8                 #    RTL changed?   must say TEST PASSED (also int4, fpga)
-                                      #    (Windows: .\sim\run_sim.ps1 int8)
+                                      #    (Windows: powershell -ExecutionPolicy Bypass -File sim\run_sim.ps1 int8)
 # crosby3 only, in flow/tsmc18:  rc -f syn_int8.g ; innovus -files pnr_int8.tcl
 # then ./save_results.sh int8         #    copy reports into results/int8/
 # 3. write/update docs/progress/<date>-<milestone>.md (Claude does this)

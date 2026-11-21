@@ -37,12 +37,18 @@
 ```bat
 :: where: Windows + Vivado (Command Prompt, repo root), board on USB-PROG/UART, all switches down
 git pull --rebase
-powershell -ExecutionPolicy Bypass -File sim\run_sim.ps1 fpga    :: -> FPGA TOP TEST PASSED
-fpga\program.bat nexys4ddr                                       :: Nexys 4 DDR / A7-100T (nexys4 for the original Nexys 4)
-python -m pip install numpy pyserial sounddevice                 :: once
-python fpga\mic_demo.py --clips                                  :: no microphone: 200 test clips over the UART
-python fpga\mic_demo.py                                          :: speak: yes, no, on, off, left, right
-fpga\build.bat nexys4ddr                                         :: only to rebuild (~20 min, keep the laptop awake)
+REM expect: FPGA TOP TEST PASSED
+powershell -ExecutionPolicy Bypass -File sim\run_sim.ps1 fpga
+REM Nexys 4 DDR / A7-100T (nexys4 for the original Nexys 4)
+fpga\program.bat nexys4ddr
+REM once
+python -m pip install numpy pyserial sounddevice
+REM no microphone: 200 test clips over the UART
+python fpga\mic_demo.py --clips
+REM speak: yes, no, on, off, left, right
+python fpga\mic_demo.py
+REM only to rebuild (~20 min, keep the laptop awake)
+fpga\build.bat nexys4ddr
 ```
 
 ## Files added / changed

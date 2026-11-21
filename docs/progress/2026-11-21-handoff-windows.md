@@ -76,8 +76,10 @@ What to expect: the display shows `--------` during the self-test, then `  PASS 
 ### 5. Words from the PC microphone
 ```bat
 python -m pip install numpy pyserial sounddevice
-python fpga\mic_demo.py --clips     :: expect 400/400 same as Python
-python fpga\mic_demo.py             :: a person speaks: yes / no / on / off / left / right
+REM expect 400/400 same as Python
+python fpga\mic_demo.py --clips
+REM a person speaks: yes, no, on, off, left, right
+python fpga\mic_demo.py
 ```
 - **What the board does:** it shows the word, and the PC prints the board's answer next to Python's.
 - **`--clips` and `--wav`** need no input, so Claude can run them. Live `mic_demo.py` needs a person at the microphone.
@@ -97,7 +99,8 @@ python fpga\mic_demo.py             :: a person speaks: yes / no / on / off / le
 
 ### 7. Only if the FPGA design changes
 ```bat
-fpga\build.bat nexys4ddr program    :: about 20 min; keep the PC awake. Stops, and does not program, if timing fails.
+REM about 20 min; keep the PC awake. Stops, and does not program the board, if timing fails.
+fpga\build.bat nexys4ddr program
 ```
 After the build, search `fpga\work\nexys4ddr\kws_fpga.runs\synth_1\runme.log` for `[Synth 8-4445]`. That warning
 means a `.mem` file was missing, and Vivado filled that ROM with zeros (CLAUDE.md #8).

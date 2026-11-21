@@ -47,21 +47,26 @@ Details: [`results/RESULTS.md`](results/RESULTS.md). Reports: `results/int8/`, `
 Both precisions are in one bitstream, with the weights and the 200 test clips in on-chip ROMs.
 
 ```bat
-fpga\program.bat nexys4       :: original Nexys 4 (no "DDR")   -> results/fpga/kws_fpga_top_nexys4.bit
-fpga\program.bat nexys4ddr    :: Nexys 4 DDR / Nexys A7-100T   -> results/fpga/kws_fpga_top_nexys4ddr.bit
+REM Nexys 4 DDR or Nexys A7-100T (the team's board): loads results\fpga\kws_fpga_top_nexys4ddr.bit
+fpga\program.bat nexys4ddr
+REM original Nexys 4, no DDR: loads results\fpga\kws_fpga_top_nexys4.bit (built, not yet tried on that board)
+fpga\program.bat nexys4
 ```
 
 **Speak to it (no switches needed):** load the bitstream, leave all switches down, then on the PC run
 
 ```bat
-python -m pip install numpy pyserial sounddevice   :: once
-python fpga\mic_demo.py                            :: say: yes, no, on, off, left, right
+REM once
+python -m pip install numpy pyserial sounddevice
+REM then say: yes, no, on, off, left, right
+python fpga\mic_demo.py
 ```
 
 The PC records each word, computes its MFCC inputs (INT8 and INT4, as in `python/`) and sends them over
 the USB cable. The FPGA runs both accelerators and shows the word, e.g. `  3  YES` (3 = words heard so
 far). The PC prints the FPGA's answer next to the Python model's (`same as Python`).
-`python fpga\mic_demo.py --clips` does the same with the 200 test clips, without a microphone.
+`python fpga\mic_demo.py --clips` sends the 200 test clips instead, using their stored inputs (so it skips the
+microphone front end), and checks every answer of the board against Python.
 
 | Control | What the board does |
 |---------|---------------------|
@@ -109,7 +114,7 @@ fpga\build.bat nexys4ddr program                   # Windows: rebuild (~20 min) 
 | Model trained on Speech Commands, INT8/INT4 QAT export | ✅ 86.7 % / 85.1 % |
 | RTL + testbench (bit-exact vs Python, every layer, 200 real clips) | ✅ 0 mismatches, INT8 & INT4 |
 | Synthesis + place & route (tsmc18), DRC/connectivity/antenna | ✅ both precisions, timing met at 100 MHz |
-| FPGA demo (switches, power-on self-test, UART report, PC microphone) | ✅ simulated; ✅ on a Nexys A7-100T: self-test PASS, 200 clips sent from the PC = Python (400/400); ✅ bitstreams for Nexys 4 DDR/A7 and Nexys 4, both with the microphone input (50 MHz, timing met) |
+| FPGA demo (switches, power-on self-test, UART report, PC microphone) | ✅ simulated; ✅ on a Nexys A7-100T: self-test PASS, 200 clips sent from the PC = Python (400/400); ✅ bitstreams for Nexys 4 DDR/A7 and Nexys 4, both with the microphone input (50 MHz, timing met; the Nexys 4 one not yet tried on a board) |
 | Final report and slides | ✅ `docs/report/` ; ✅ slides: 14 slides, the source of every number in `docs/slides/README.md` (still to add: date, board photo) |
 | Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 

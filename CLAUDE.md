@@ -104,7 +104,8 @@ Python over the UART); ASIC numbers in `results/RESULTS.md`.
    them as enable flops and Innovus stops placement with IMPSP-9099.
 3. **Fmax** – RC area recovery pushes the 100 MHz slack to ~0, so Fmax comes from the separate 2 ns runs
    (`fmax_int*.g`, `kws_fast.sdc`): Fmax = 1 / (2 ns − slack).
-4. **FPGA clock** – the LUT ROMs + MAC path is ~14 ns on the Artix-7, so `kws_fpga_top.v` runs at 50 MHz from
+4. **FPGA clock** – the LUT ROMs + MAC path is ~19 ns on the Artix-7 (data path 18.8 ns, WNS +1.116 ns at 50 MHz in
+   `results/fpga/nexys4ddr/timing_summary.rpt`), so `kws_fpga_top.v` runs at 50 MHz from
    an MMCM (at 100 MHz the route had WNS −4.4 ns). The core needs same-cycle (asynchronous) memory reads, so
    the ROMs must stay distributed; moving them to block RAM needs a core change (see `alt/` for that style).
 5. **Paths with spaces** – in Vivado Tcl pass paths to `add_files` inside `[list ...]`; give

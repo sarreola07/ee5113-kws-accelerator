@@ -24,10 +24,14 @@
 ```bat
 :: where: Windows + Vivado (Command Prompt, repo root)
 git pull --rebase
-powershell -ExecutionPolicy Bypass -File sim\run_sim.ps1 fpga     :: -> FPGA TOP TEST PASSED
-fpga\program.bat nexys4          :: original Nexys 4  (or nexys4ddr for Nexys 4 DDR / A7-100T)
-powershell -ExecutionPolicy Bypass -File fpga\monitor.ps1          :: optional: the board's text report
-fpga\build.bat nexys4            :: only to rebuild (~20 min; keep the laptop from sleeping)
+REM expect: FPGA TOP TEST PASSED
+powershell -ExecutionPolicy Bypass -File sim\run_sim.ps1 fpga
+REM original Nexys 4 (or nexys4ddr for Nexys 4 DDR / A7-100T)
+fpga\program.bat nexys4
+REM optional: the board's text report
+powershell -ExecutionPolicy Bypass -File fpga\monitor.ps1
+REM only to rebuild (~20 min; keep the laptop from sleeping)
+fpga\build.bat nexys4
 ```
 
 What the board shows:
