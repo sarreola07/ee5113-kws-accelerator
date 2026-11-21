@@ -95,3 +95,4 @@ python sim/uart_xcheck.py                          # no board: kws_live.py packe
 | 2026-11-19 | [Combined repo: trained model, tsmc18 ASIC results, FPGA demo, report](docs/progress/2026-11-19-combined-design.md) |
 | 2026-11-20 | [Design comparison, review notes, board self-check, live words](docs/progress/2026-11-20-design-comparison-board-check.md) |
 | 2026-11-20 | [Presentation deck: mock with placeholders, sources of every number](docs/progress/2026-11-20-slides-draft.md) |
+| 2026-11-21 | [Handoff: continue on the Windows PC (xsim, board test, live words, slides)](docs/progress/2026-11-21-handoff-windows.md) |
