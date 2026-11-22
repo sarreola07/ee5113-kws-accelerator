@@ -22,8 +22,8 @@
 | Board results | On a Nexys A7-100T (chit2000, `docs/progress/2026-11-20-fpga-microphone.md`):<br>• self-test: INT8 176/200 and INT4 177/200 correct, 200/200 same as Python each<br>• `mic_demo.py --clips`: 400/400 same as Python<br>• text-to-speech words: 12/12<br>• live microphone words: shown on the display |
 | Our own board | Not run yet. It would not power on (2026-11-21); see "If something fails". |
 | PR #1 | Our alternative FPGA design (a board self-check that compares all 6 scores, and the `kws_live.py` UART link). It stays on branch `sergio/board-check-live-voice` and was not merged. |
-| Slides | 14 slides, online. The FPGA slide has the board results. Still to add: the presentation date and the board photo. |
-| Report | Updated 2026-11-21 (names, section 4.6 FPGA demonstration). See the 2026-11-21 progress log. |
+| Slides | 14 slides, online. The FPGA slide has the board results, and the title slide the date. Still to add: the board photo (slide 11). |
+| Report | Updated 2026-11-21: names, date, section 4.6 FPGA demonstration, and the FPGA in the method and tools. See `2026-11-21-merge-report-slides.md`. |
 
 ## On the Windows PC, in order
 Each command is given twice:

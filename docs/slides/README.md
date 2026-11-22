@@ -1,7 +1,7 @@
 # Final presentation slides
 
-- **Status:** 14 slides. The FPGA slide has the board results of the merged design (Nexys A7-100T). Still to add: the
-  presentation date and the board photo.
+- **Status:** 14 slides. The FPGA slide has the board results of the merged design (Nexys A7-100T), and the title slide
+  has the date (November 21, 2026). Still to add: the board photo.
 - **Final files:** export the finished deck as `.pptx` and `.pdf` and commit both to this folder.
 - **Length:** about 10 minutes. That is the team's own target; the course sets no length.
 - **Required sections, in this order** (`docs/reference/Final_Project_Guidelines.pdf`, p1–2):
@@ -23,7 +23,7 @@
 
 | # | Section | Slide | Numbers and claims | Source |
 |---|---|---|---|---|
-| 1 | Title page | Title | title, subtitle, course, instructor, Fall 2026 | final report cover |
+| 1 | Title page | Title | title, subtitle, names, course, instructor, Fall 2026, date (November 21, 2026) | final report cover |
 | 2 | Outline | Outline | the five sections | course guidelines |
 | 3 | Overview | Problem and System | the question from the proposal; the six words; system figure | `docs/reference/Project_Proposal.pdf` p1; report Figure 1 |
 | 4 | Design | Network and Quantization | Speech Commands v0.02, 23,154 clips (18,470 / 2,254 / 2,430); MFCC 25 × 10 = 250; 250 → 32 → 6; FP32 then QAT per bit width; histograms of the 8,000 layer-1 weights | `python/config.py`, `results/python/logs/prepare_data.txt`, `results/python/float_weights.npz`, `qmodel_int*.npz` |
@@ -45,7 +45,6 @@ Differences on the slides are computed from the repo values; the arithmetic is i
 - QAT gain at INT4: 85.14 − 83.74 = 1.40 points.
 
 ## Still to fill in
-- Slide 1: the presentation date.
 - Slide 11: the board photo. Drop `F1_nexys_a7_mic_word_closeup.jpg` into the frame; the caption under it
   describes that photo (LED11 self-test passed, LED10 microphone word, LED13 INT8 and INT4 equal Python).
 

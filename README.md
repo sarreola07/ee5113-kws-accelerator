@@ -67,6 +67,9 @@ the USB cable. The FPGA runs both accelerators and shows the word, e.g. `  3  YE
 far). The PC prints the FPGA's answer next to the Python model's (`same as Python`).
 `python fpga\mic_demo.py --clips` sends the 200 test clips instead, using their stored inputs (so it skips the
 microphone front end), and checks every answer of the board against Python.
+By default `mic_demo.py` scales each spoken word to the typical training loudness before the MFCC step; with
+`--no-agc` the inputs are exactly what the training front end in `python/` computes. "Same as Python" compares the
+predicted word, not the six scores.
 
 | Control | What the board does |
 |---------|---------------------|
@@ -115,7 +118,7 @@ fpga\build.bat nexys4ddr program                   # Windows: rebuild (~20 min) 
 | RTL + testbench (bit-exact vs Python, every layer, 200 real clips) | ✅ 0 mismatches, INT8 & INT4 |
 | Synthesis + place & route (tsmc18), DRC/connectivity/antenna | ✅ both precisions, timing met at 100 MHz |
 | FPGA demo (switches, power-on self-test, UART report, PC microphone) | ✅ simulated; ✅ on a Nexys A7-100T: self-test PASS, 200 clips sent from the PC = Python (400/400); ✅ bitstreams for Nexys 4 DDR/A7 and Nexys 4, both with the microphone input (50 MHz, timing met; the Nexys 4 one not yet tried on a board) |
-| Final report and slides | ✅ `docs/report/` ; ✅ slides: 14 slides, the source of every number in `docs/slides/README.md` (still to add: date, board photo) |
+| Final report and slides | ✅ `docs/report/` (updated 2026-11-21: both names, date, §4.6 FPGA demonstration) ; ✅ slides: 14 slides, the source of every number in `docs/slides/README.md` (still to add: the board photo) |
 | Optional: INT6, gpdk045 flow, block-RAM ROMs (see `alt/`) | ⏳ |
 
 ## Progress log
@@ -130,3 +133,4 @@ fpga\build.bat nexys4ddr program                   # Windows: rebuild (~20 min) 
 | 2026-11-20 | [Design comparison and review notes (PR #1's alternative FPGA design, not merged)](docs/progress/2026-11-20-design-comparison-board-check.md) |
 | 2026-11-20 | [Presentation deck: 14 slides, sources of every number](docs/progress/2026-11-20-slides-draft.md) |
 | 2026-11-21 | [Handoff: continue on the Windows PC (Nexys A7-100T)](docs/progress/2026-11-21-handoff-windows.md) |
+| 2026-11-21 | [Final deliverables: merged design, report and slides](docs/progress/2026-11-21-merge-report-slides.md) |

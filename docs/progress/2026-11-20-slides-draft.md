@@ -8,7 +8,8 @@
 
 
 > **Update, 2026-11-21:** the FPGA slide (11) now shows the board results of the merged design (Nexys A7-100T).
-> The title notes and the conclusion were updated to match.
+> The title notes and the conclusion were updated to match. The date and the report cover were filled in the same day
+> (`2026-11-21-merge-report-slides.md`); only the board photo is still open.
 
 ## What was done
 - **A 14-slide mock deck** in the order the course requires (`docs/reference/Final_Project_Guidelines.pdf`):
