@@ -33,13 +33,19 @@
   - slides 6 and 12 name the Nexys A7-100T;
   - slide 14 lists the FPGA demo as delivered, and live-microphone accuracy as not measured.
   - The source of every number is in `docs/slides/README.md`.
-- **Report** (`docs/report/EE5113_Final_Project_Report.docx` and `.pdf`):
+- **Report** (`docs/report/EE5113_Final_Project_Report.docx` and `.pdf`, now 33 pages):
   - both names on the cover, with the date November 21, 2026; written as "we";
-  - new section 4.6, "FPGA demonstration", with the board results (Table 11); one sentence each in the Abstract and
-    the Conclusion;
-  - the FPGA in the objectives and scope (§1.3, §1.4), the method (§3.2, §3.3), the tools (Table 5) and §3.6, which now
-    says the words come from the PC's microphone;
-  - the appendix links the public repo and uses the repo's paths.
+  - new section 4.6, "FPGA Demonstration", with the board results (Table 11); one sentence each in the Abstract and
+    the Conclusion, and the FPGA item is off the future-work list;
+  - the FPGA board in the objectives (§1.3), the project summary (§1.4), the design flow (§3.2, step 8), the
+    verification (§3.3, `tb/tb_fpga_top.v`) and the tools (Table 5); §3.6 now says the words come from the PC's
+    microphone and the MFCC front end stays in software;
+  - the appendix links the public repo, and Table 12 uses the repo's paths. Its last row no longer promises GDS files,
+    because `results/int8` and `results/int4` hold only reports, netlists and layout pictures;
+  - the photo placeholder in §4.6 was removed (there are no photo files yet), and the table of contents was updated.
+  - A separate check compared every change with the original report, and every number with `results/RESULTS.md`, the
+    FPGA reports and the 2026-11-20 log. It also looked at every page: none is blank, and the table of contents
+    matches the pages.
 
 ## How to reproduce / load it
 Simulations (the merged design passes all three):
@@ -98,6 +104,10 @@ WHS +0.095 ns at 50 MHz (xc7a100tcsg324-1, Vivado 2024.2). The ASIC numbers did 
 - **Board photos:** they reached us as chat images, not files, so they are not in the repo yet. Slide 11 has an empty
   frame for photo F1.
 - **Pasting into Command Prompt:** see the `REM` fix above.
+- **Report PDF fonts:** the committed PDF was made with LibreOffice. It uses Carlito (the same letter widths as
+  Calibri) and DejaVu Sans Mono instead of Consolas, so it looks slightly different from a Word export, and its
+  table-of-contents page numbers follow the LibreOffice layout. To export from Word instead, first update the table of
+  contents (right-click it → Update Field → Update page numbers only).
 
 ## Known limits of the merged FPGA design (for later; none changes the results above)
 - **Empty ROMs:** if every `.mem` file is missing at build time, Vivado fills every ROM with zeros. The computed and
@@ -117,3 +127,4 @@ WHS +0.095 ns at 50 MHz (xc7a100tcsg324-1, Vivado 2024.2). The ASIC numbers did 
 - [ ] Rehearse with the speaker notes and decide who presents which slides.
 - [ ] Live demo on chit2000's board, or on ours once it powers on.
 - [ ] Optional: measure live-microphone accuracy (for example 10 tries per word) and add it to slide 14.
+- [ ] Optional, in Word: update the table of contents, then Save As PDF to get the original fonts.
